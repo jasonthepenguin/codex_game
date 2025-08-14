@@ -42,6 +42,27 @@ controls.addEventListener('unlock', () => {
   overlay?.classList.remove('hidden');
 });
 
+// Coordinates HUD (toggled with "P")
+const coordsEl = document.createElement('div');
+coordsEl.id = 'coord-hud';
+coordsEl.style.position = 'fixed';
+coordsEl.style.top = '8px';
+coordsEl.style.right = '12px';
+coordsEl.style.padding = '6px 8px';
+coordsEl.style.background = 'rgba(0, 0, 0, 0.5)';
+coordsEl.style.color = '#ffffff';
+coordsEl.style.fontFamily = 'monospace';
+coordsEl.style.fontSize = '12px';
+coordsEl.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+coordsEl.style.borderRadius = '4px';
+coordsEl.style.zIndex = '10000';
+coordsEl.style.pointerEvents = 'none';
+coordsEl.style.whiteSpace = 'pre';
+coordsEl.style.display = 'none';
+document.body.appendChild(coordsEl);
+
+let showCoords = false;
+
 // Lights
 const hemi = new THREE.HemisphereLight(0xff00ff, 0x00ffff, 0.6);
 scene.add(hemi);
@@ -58,6 +79,7 @@ let isDesertMode = false;
 let psychedelicWorld: THREE.Group;
 let desertWorld: THREE.Group;
 let hasLeftPortal = true; // Track if player has left portal area
+let staffSprite: THREE.Sprite | null = null;
 
 function addWorld() {
   // Create psychedelic world group
@@ -214,6 +236,7 @@ function createDesertWorld() {
 addWorld();
 createDesertWorld();
 createAngels();
+createStaffBillboard();
 
 // Create biblically accurate angels
 function createAngels() {
@@ -556,6 +579,33 @@ function createPortal() {
 
 createPortal();
 
+// Create billboard sprite for staff.png (always faces camera)
+function createStaffBillboard() {
+  const loader = new THREE.TextureLoader();
+  loader.load('/staff.png', (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      alphaTest: 0.1,
+      color: 0x999999,
+      opacity: 0.6
+    });
+    material.toneMapped = false;
+    const sprite = new THREE.Sprite(material);
+    // Keep aspect ratio based on image dimensions
+    const targetHeight = 4; // world units tall
+    const aspect = (texture.image && texture.image.width && texture.image.height)
+      ? texture.image.width / texture.image.height
+      : 1;
+    sprite.scale.set(targetHeight * aspect, targetHeight, 1);
+    sprite.position.set(8, 2, -12);
+    scene.add(sprite);
+    staffSprite = sprite;
+  });
+}
+
 // Post-processing
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
@@ -595,6 +645,12 @@ const onKeyDown = (event: KeyboardEvent) => {
     case 'KeyS': moveBackward = true; break;
     case 'ArrowRight':
     case 'KeyD': moveRight = true; break;
+    case 'KeyP':
+      if (!event.repeat) {
+        showCoords = !showCoords;
+        coordsEl.style.display = showCoords ? 'block' : 'none';
+      }
+      break;
   }
 };
 
@@ -623,6 +679,12 @@ let glitchOffAt = 0;
 function animate() {
   const delta = Math.min(0.05, clock.getDelta());
   const t = clock.elapsedTime;
+
+  // Update coordinates HUD
+  if (showCoords) {
+    const p = camera.position;
+    coordsEl.textContent = `X: ${p.x.toFixed(2)}\nY: ${p.y.toFixed(2)}\nZ: ${p.z.toFixed(2)}`;
+  }
 
   // Check portal collision
   const playerPos = camera.position;
@@ -777,6 +839,11 @@ function animate() {
       mat.color.copy(c);
       mat.emissive.copy(c).multiplyScalar(0.15 + 0.25 * (0.5 + 0.5 * Math.sin(t * 0.8)));
     }
+  }
+
+  // Ensure billboard faces the camera (optional; Sprite already faces camera by default, but keep stable)
+  if (staffSprite) {
+    staffSprite.quaternion.copy(camera.quaternion);
   }
 
   // Auto glitch pulse
