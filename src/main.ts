@@ -82,17 +82,24 @@ scene.add(dir);
 // World geometry helpers
 const psychedelicMeshes: THREE.Mesh[] = [];
 const desertMeshes: THREE.Mesh[] = [];
+const chinaMeshes: THREE.Mesh[] = [];
 const angels: THREE.Group[] = [];
 const angelHalos: THREE.Sprite[] = [];
 const sacredSkySprites: THREE.Sprite[] = [];
+const marchingFigures: THREE.Group[] = [];
 let portal: THREE.Mesh;
+let chinaPortal: THREE.Mesh;
 let isDesertMode = false;
+let isChinaMode = false;
 let psychedelicWorld: THREE.Group;
 let desertWorld: THREE.Group;
+let chinaWorld: THREE.Group;
 // Ground references for raycasting
 let psychedelicGround: THREE.Mesh | null = null;
 let desertGround: THREE.Mesh | null = null;
+let chinaGround: THREE.Mesh | null = null;
 let hasLeftPortal = true; // Track if player has left portal area
+let hasLeftChinaPortal = true; // Track if player has left china portal area
 let staffSprite: THREE.Sprite | null = null;
 let staffNameplateSprite: THREE.Sprite | null = null;
 let angelSprite: THREE.Sprite | null = null;
@@ -256,8 +263,282 @@ function createDesertWorld() {
   }
 }
 
+// Create Cultural Revolution China world
+function createChinaWorld() {
+  chinaWorld = new THREE.Group();
+  chinaWorld.visible = false; // Start hidden
+  scene.add(chinaWorld);
+
+  // Grey concrete ground
+  const groundGeo = new THREE.PlaneGeometry(400, 400, 50, 50);
+  groundGeo.rotateX(-Math.PI / 2);
+  
+  const groundMat = new THREE.MeshStandardMaterial({ 
+    color: 0x555555,
+    roughness: 0.9,
+    metalness: 0.1
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.receiveShadow = true;
+  chinaWorld.add(ground);
+  chinaGround = ground;
+
+  // Create marching figures
+  function createMarchingFigure() {
+    const figure = new THREE.Group();
+    
+    // Simple body (cylinder)
+    const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d4a2b }); // Military green
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.75;
+    figure.add(body);
+    
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.2, 8, 8);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 1.7;
+    figure.add(head);
+    
+    // Hat
+    const hatGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 8);
+    const hatMat = new THREE.MeshStandardMaterial({ color: 0x2d4a2b });
+    const hat = new THREE.Mesh(hatGeo, hatMat);
+    hat.position.y = 1.9;
+    figure.add(hat);
+    
+    // Red star on hat
+    const starGeo = new THREE.CircleGeometry(0.05, 5);
+    const starMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const star = new THREE.Mesh(starGeo, starMat);
+    star.position.set(0, 1.9, 0.26);
+    figure.add(star);
+    
+    // Arms (simple cylinders)
+    const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 6);
+    const armMat = new THREE.MeshStandardMaterial({ color: 0x2d4a2b });
+    
+    const leftArm = new THREE.Mesh(armGeo, armMat);
+    leftArm.position.set(-0.4, 1.2, 0);
+    leftArm.rotation.z = 0.3;
+    figure.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeo, armMat);
+    rightArm.position.set(0.4, 1.2, 0);
+    rightArm.rotation.z = -0.3;
+    figure.add(rightArm);
+    
+    // Legs
+    const legGeo = new THREE.CylinderGeometry(0.15, 0.15, 1, 6);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x2d4a2b });
+    
+    const leftLeg = new THREE.Mesh(legGeo, legMat);
+    leftLeg.position.set(-0.2, 0.5, 0);
+    figure.add(leftLeg);
+    
+    const rightLeg = new THREE.Mesh(legGeo, legMat);
+    rightLeg.position.set(0.2, 0.5, 0);
+    figure.add(rightLeg);
+    
+    return figure;
+  }
+  
+  // Create marching formations
+  const formations = [
+    { x: 0, z: -30, rows: 5, cols: 8 },
+    { x: -40, z: 20, rows: 4, cols: 6 },
+    { x: 40, z: 10, rows: 4, cols: 6 }
+  ];
+  
+  formations.forEach(formation => {
+    for (let row = 0; row < formation.rows; row++) {
+      for (let col = 0; col < formation.cols; col++) {
+        const figure = createMarchingFigure();
+        figure.position.set(
+          formation.x + col * 2 - formation.cols,
+          0,
+          formation.z + row * 2
+        );
+        figure.userData.baseX = figure.position.x;
+        figure.userData.baseZ = figure.position.z;
+        figure.userData.marchPhase = Math.random() * Math.PI * 2;
+        marchingFigures.push(figure);
+        chinaWorld.add(figure);
+      }
+    }
+  });
+
+  // Create red flags
+  function createFlag(x: number, y: number, z: number) {
+    const group = new THREE.Group();
+    
+    // Pole
+    const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 8, 8);
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.y = 4;
+    group.add(pole);
+    
+    // Flag
+    const flagGeo = new THREE.PlaneGeometry(3, 2);
+    const flagMat = new THREE.MeshStandardMaterial({ 
+      color: 0xff0000,
+      side: THREE.DoubleSide,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.1
+    });
+    const flag = new THREE.Mesh(flagGeo, flagMat);
+    flag.position.set(1.5, 7, 0);
+    group.add(flag);
+    
+    // Yellow stars on flag
+    const starMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const bigStarGeo = new THREE.CircleGeometry(0.3, 5);
+    const bigStar = new THREE.Mesh(bigStarGeo, starMat);
+    bigStar.position.set(0.5, 7.3, 0.01);
+    group.add(bigStar);
+    
+    for (let i = 0; i < 4; i++) {
+      const smallStarGeo = new THREE.CircleGeometry(0.15, 5);
+      const smallStar = new THREE.Mesh(smallStarGeo, starMat);
+      const angle = i * 0.3 - 0.45;
+      smallStar.position.set(
+        1.2 + Math.cos(angle) * 0.5,
+        7.5 + Math.sin(angle) * 0.5,
+        0.01
+      );
+      group.add(smallStar);
+    }
+    
+    group.position.set(x, y, z);
+    group.userData.flag = flag;
+    return group;
+  }
+  
+  // Add flags around the scene
+  const flagPositions = [
+    { x: -30, z: -30 },
+    { x: 30, z: -30 },
+    { x: -50, z: 0 },
+    { x: 50, z: 0 },
+    { x: 0, z: 50 }
+  ];
+  
+  flagPositions.forEach(pos => {
+    const flag = createFlag(pos.x, 0, pos.z);
+    chinaMeshes.push(flag.userData.flag);
+    chinaWorld.add(flag);
+  });
+
+  // Add some buildings with Chinese architecture elements
+  function createBuilding(x: number, z: number) {
+    const building = new THREE.Group();
+    
+    // Base structure
+    const baseGeo = new THREE.BoxGeometry(15, 20, 15);
+    const baseMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b0000,
+      roughness: 0.7
+    });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = 10;
+    building.add(base);
+    
+    // Roof (pagoda style)
+    const roofGeo = new THREE.ConeGeometry(12, 6, 4);
+    const roofMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b0000,
+      roughness: 0.6
+    });
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = 23;
+    roof.rotation.y = Math.PI / 4;
+    building.add(roof);
+    
+    // Add propaganda poster billboard
+    const posterGeo = new THREE.PlaneGeometry(8, 10);
+    const posterMat = new THREE.MeshStandardMaterial({
+      color: 0xff0000,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.2
+    });
+    const poster = new THREE.Mesh(posterGeo, posterMat);
+    poster.position.set(0, 10, 7.6);
+    building.add(poster);
+    
+    // Add Chinese characters (simplified representation)
+    const textGeo = new THREE.PlaneGeometry(6, 2);
+    const textMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const text = new THREE.Mesh(textGeo, textMat);
+    text.position.set(0, 10, 7.7);
+    building.add(text);
+    
+    building.position.set(x, 0, z);
+    return building;
+  }
+  
+  // Add buildings
+  const buildingPositions = [
+    { x: -70, z: -50 },
+    { x: 70, z: -50 },
+    { x: 0, z: -80 }
+  ];
+  
+  buildingPositions.forEach(pos => {
+    const building = createBuilding(pos.x, pos.z);
+    chinaWorld.add(building);
+  });
+
+  // Add red lanterns
+  function createLantern(x: number, y: number, z: number) {
+    const lanternGroup = new THREE.Group();
+    
+    const lanternGeo = new THREE.SphereGeometry(1, 8, 8);
+    const lanternMat = new THREE.MeshStandardMaterial({
+      color: 0xff0000,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.4,
+      roughness: 0.3
+    });
+    const lantern = new THREE.Mesh(lanternGeo, lanternMat);
+    lantern.scale.y = 1.3;
+    lanternGroup.add(lantern);
+    
+    // Top and bottom caps
+    const capGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 8);
+    const capMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+    
+    const topCap = new THREE.Mesh(capGeo, capMat);
+    topCap.position.y = 1.3;
+    lanternGroup.add(topCap);
+    
+    const bottomCap = new THREE.Mesh(capGeo, capMat);
+    bottomCap.position.y = -1.3;
+    lanternGroup.add(bottomCap);
+    
+    lanternGroup.position.set(x, y, z);
+    lanternGroup.userData.baseY = y;
+    chinaMeshes.push(lantern);
+    return lanternGroup;
+  }
+  
+  // Add lanterns along paths
+  for (let i = 0; i < 20; i++) {
+    const angle = (i / 20) * Math.PI * 2;
+    const radius = 30 + Math.sin(i * 0.5) * 10;
+    const lantern = createLantern(
+      Math.cos(angle) * radius,
+      8,
+      Math.sin(angle) * radius
+    );
+    chinaWorld.add(lantern);
+  }
+}
+
 addWorld();
 createDesertWorld();
+createChinaWorld();
 createAngels();
 createStaffBillboard();
 createAngelBillboard();
@@ -609,6 +890,114 @@ function createPortal() {
 }
 
 createPortal();
+
+// Create green portal to China world
+function createChinaPortal() {
+  // Create portal group
+  const portalGroup = new THREE.Group();
+  portalGroup.position.set(0, 0, 20); // Behind player start position
+  
+  // Create arch frame using extruded shape
+  const archShape = new THREE.Shape();
+  const outerWidth = 4;
+  const outerHeight = 7;
+  const innerWidth = 3;
+  const innerHeight = 6;
+  const archRadius = innerWidth;
+  
+  // Outer arch
+  archShape.moveTo(-outerWidth, 0);
+  archShape.lineTo(-outerWidth, outerHeight - archRadius);
+  archShape.quadraticCurveTo(-outerWidth, outerHeight, -outerWidth + archRadius, outerHeight);
+  archShape.lineTo(outerWidth - archRadius, outerHeight);
+  archShape.quadraticCurveTo(outerWidth, outerHeight, outerWidth, outerHeight - archRadius);
+  archShape.lineTo(outerWidth, 0);
+  archShape.lineTo(-outerWidth, 0);
+  
+  // Inner cutout (create hole)
+  const holePath = new THREE.Path();
+  holePath.moveTo(-innerWidth, 0);
+  holePath.lineTo(-innerWidth, innerHeight - archRadius);
+  holePath.quadraticCurveTo(-innerWidth, innerHeight, 0, innerHeight);
+  holePath.quadraticCurveTo(innerWidth, innerHeight, innerWidth, innerHeight - archRadius);
+  holePath.lineTo(innerWidth, 0);
+  archShape.holes.push(holePath);
+  
+  const extrudeSettings = {
+    depth: 1,
+    bevelEnabled: true,
+    bevelThickness: 0.1,
+    bevelSize: 0.1,
+    bevelSegments: 2
+  };
+  
+  const archGeo = new THREE.ExtrudeGeometry(archShape, extrudeSettings);
+  
+  // Dark red arch frame for China portal
+  const archMat = new THREE.MeshStandardMaterial({
+    color: 0x330000,
+    metalness: 0.3,
+    roughness: 0.7
+  });
+  const archFrame = new THREE.Mesh(archGeo, archMat);
+  archFrame.position.z = -0.5;
+  portalGroup.add(archFrame);
+  
+  // Create the portal surface (green glowing plane)
+  const shape = new THREE.Shape();
+  const width = 2.8;
+  const height = 5.5;
+  shape.moveTo(-width, 0);
+  shape.lineTo(-width, height * 0.7);
+  shape.quadraticCurveTo(-width, height, 0, height);
+  shape.quadraticCurveTo(width, height, width, height * 0.7);
+  shape.lineTo(width, 0);
+  shape.lineTo(-width, 0);
+  
+  const portalInnerGeo = new THREE.ShapeGeometry(shape);
+  const portalInnerMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,
+    transparent: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide
+  });
+  const portalInner = new THREE.Mesh(portalInnerGeo, portalInnerMat);
+  portalInner.position.z = 0.1; // Slightly in front of arch
+  portalGroup.add(portalInner);
+  
+  // Add green glow effect around portal
+  const glowGeo = new THREE.PlaneGeometry(6.5, 7);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,
+    transparent: true,
+    opacity: 0.2,
+    side: THREE.DoubleSide
+  });
+  const glow = new THREE.Mesh(glowGeo, glowMat);
+  glow.position.y = 3;
+  glow.position.z = -0.1;
+  portalGroup.add(glow);
+  
+  // Add base platform
+  const baseGeo = new THREE.BoxGeometry(8, 0.5, 2);
+  const baseMat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    metalness: 0.2,
+    roughness: 0.8
+  });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.position.y = -0.25;
+  portalGroup.add(base);
+  
+  scene.add(portalGroup);
+  
+  // Store reference to the inner portal for animation
+  chinaPortal = portalInner;
+  chinaPortal.userData.portalGroup = portalGroup;
+}
+
+createPortal();
+createChinaPortal();
 
 // Create billboard sprite for staff.png (always faces camera)
 function createStaffBillboard() {
@@ -1088,6 +1477,7 @@ const tmpVec3 = new THREE.Vector3();
 const tmpVec3b = new THREE.Vector3();
 const EYE_HEIGHT_PSY = 5.0; // exaggerated for testing in psychedelic world
 const EYE_HEIGHT_DESERT = 3.2; // increase desert eye height as requested
+const EYE_HEIGHT_CHINA = 1.8; // normal human eye height for China world
 
 const onKeyDown = (event: KeyboardEvent) => {
   switch (event.code) {
@@ -1140,15 +1530,17 @@ function animate() {
     coordsEl.textContent = `X: ${p.x.toFixed(2)}\nY: ${p.y.toFixed(2)}\nZ: ${p.z.toFixed(2)}`;
   }
 
-  // Check portal collision
+  // Check portal collisions
   const playerPos = camera.position;
   const portalGroupPos = portal.userData.portalGroup ? portal.userData.portalGroup.position : portal.position;
   const portalDistance = playerPos.distanceTo(portalGroupPos);
+  const chinaPortalGroupPos = chinaPortal.userData.portalGroup ? chinaPortal.userData.portalGroup.position : chinaPortal.position;
+  const chinaPortalDistance = playerPos.distanceTo(chinaPortalGroupPos);
   
-  // Portal collision logic with proper cooldown
+  // White portal collision logic (psychedelic <-> desert)
   if (portalDistance < 3) {
     // If player is in portal range and has left the portal since last transition
-    if (hasLeftPortal) {
+    if (hasLeftPortal && !isChinaMode) {
       if (!isDesertMode) {
         // Enter desert world
         isDesertMode = true;
@@ -1211,7 +1603,83 @@ function animate() {
     hasLeftPortal = true;
   }
 
-  // Animate portal - pulsing glow effect
+  // Green portal collision logic (psychedelic <-> china)
+  if (chinaPortalDistance < 3) {
+    // If player is in green portal range and has left the portal since last transition
+    if (hasLeftChinaPortal && !isDesertMode) {
+      if (!isChinaMode) {
+        // Enter China world
+        isChinaMode = true;
+        hasLeftChinaPortal = false; // Mark that we need to leave portal before next transition
+        
+        // Switch worlds
+        psychedelicWorld.visible = false;
+        chinaWorld.visible = true;
+        
+        // Change environment to Cultural Revolution China atmosphere
+        scene.background = new THREE.Color(0x666666); // Grey overcast sky
+        scene.fog = new THREE.Fog(0x666666, 20, 250); // Grey fog
+        hemi.color.setHex(0xcccccc); // Dim white light
+        hemi.groundColor.setHex(0x555555); // Grey ground
+        
+        // Hide Mark Chen in China world
+        if (staffSprite) staffSprite.visible = false;
+        if (staffNameplateSprite) staffNameplateSprite.visible = false;
+        // Hide Angel in China world
+        if (angelSprite) angelSprite.visible = false;
+        
+        // Hide white portal in China world
+        if (portal.userData.portalGroup) {
+          portal.userData.portalGroup.visible = false;
+        }
+        
+        // Reduce bloom for more austere look
+        bloomPass.strength = 2.0;
+        setTimeout(() => { bloomPass.strength = 0.3; }, 500);
+        
+        // Set RGB shift for China world
+        rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 0.8;
+      } else {
+        // Return to psychedelic world
+        isChinaMode = false;
+        hasLeftChinaPortal = false; // Mark that we need to leave portal before next transition
+        
+        // Switch worlds back
+        psychedelicWorld.visible = true;
+        chinaWorld.visible = false;
+        
+        // Reset to psychedelic environment
+        scene.fog = new THREE.FogExp2(0x040012, 0.015);
+        hemi.color.setHex(0xff00ff); // Reset hemisphere light colors
+        hemi.groundColor.setHex(0x00ffff);
+        
+        // Show Mark Chen again in psychedelic world if not collected yet
+        if (!hasCollectedMark) {
+          if (staffSprite) staffSprite.visible = true;
+          if (staffNameplateSprite) staffNameplateSprite.visible = true;
+        }
+        // Hide Angel outside desert
+        if (angelSprite) angelSprite.visible = false;
+        
+        // Show white portal again when back in psychedelic world
+        if (portal.userData.portalGroup) {
+          portal.userData.portalGroup.visible = true;
+        }
+        
+        // Increase bloom for transition effect
+        bloomPass.strength = 2.5;
+        setTimeout(() => { bloomPass.strength = 1.15; }, 500);
+        
+        // Reset RGB shift to psychedelic baseline
+        rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT;
+      }
+    }
+  } else if (chinaPortalDistance > 4) {
+    // Player has moved away from china portal, allow next transition
+    hasLeftChinaPortal = true;
+  }
+
+  // Animate portals - pulsing glow effect
   const portalMat = portal.material as THREE.MeshBasicMaterial;
   portalMat.opacity = 0.9 + Math.sin(t * 3) * 0.1;
   
@@ -1222,6 +1690,19 @@ function animate() {
     );
     if (glowMesh && glowMesh.material) {
       (glowMesh.material as THREE.MeshBasicMaterial).opacity = 0.15 + Math.sin(t * 2) * 0.1;
+    }
+  }
+
+  // Animate China portal
+  const chinaPortalMat = chinaPortal.material as THREE.MeshBasicMaterial;
+  chinaPortalMat.opacity = 0.9 + Math.sin(t * 2.5) * 0.1;
+  
+  if (chinaPortal.userData.portalGroup) {
+    const glowMesh = chinaPortal.userData.portalGroup.children.find((child: THREE.Mesh) => 
+      child.geometry instanceof THREE.PlaneGeometry && child !== chinaPortal
+    );
+    if (glowMesh && glowMesh.material) {
+      (glowMesh.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(t * 2.2) * 0.1;
     }
   }
 
@@ -1305,6 +1786,55 @@ function animate() {
       const targetSize = 12 * angel.scale.x;
       halo.scale.set(targetSize, targetSize, 1);
     }
+  } else if (isChinaMode) {
+    // Animate China world elements
+    
+    // Marching figures animation
+    marchingFigures.forEach((figure, idx) => {
+      // Marching motion (up and down movement while moving forward)
+      const marchTime = t * 2 + figure.userData.marchPhase;
+      const stepHeight = Math.abs(Math.sin(marchTime)) * 0.3;
+      figure.position.y = stepHeight;
+      
+      // Forward march movement
+      figure.position.z = figure.userData.baseZ + Math.sin(t * 0.5) * 10;
+      
+      // Slight swaying
+      figure.rotation.y = Math.sin(marchTime * 0.5) * 0.1;
+      
+      // Arm swing
+      const leftArm = figure.children.find(child => child.position.x < 0 && child.position.y > 1);
+      const rightArm = figure.children.find(child => child.position.x > 0 && child.position.y > 1);
+      if (leftArm) leftArm.rotation.x = Math.sin(marchTime) * 0.4;
+      if (rightArm) rightArm.rotation.x = -Math.sin(marchTime) * 0.4;
+      
+      // Leg movement
+      const leftLeg = figure.children.find(child => child.position.x < 0 && child.position.y < 1);
+      const rightLeg = figure.children.find(child => child.position.x > 0 && child.position.y < 1);
+      if (leftLeg) leftLeg.rotation.x = Math.sin(marchTime) * 0.3;
+      if (rightLeg) rightLeg.rotation.x = -Math.sin(marchTime) * 0.3;
+    });
+    
+    // Animate flags waving
+    chinaMeshes.forEach(mesh => {
+      if (mesh.geometry instanceof THREE.PlaneGeometry) {
+        // Wave effect for flags
+        mesh.rotation.y = Math.sin(t * 0.8 + mesh.position.x * 0.1) * 0.2;
+        mesh.rotation.z = Math.sin(t * 1.2 + mesh.position.z * 0.1) * 0.1;
+      }
+      
+      // Lanterns swaying
+      if (mesh.geometry instanceof THREE.SphereGeometry && mesh.scale.y > 1) {
+        const parent = mesh.parent;
+        if (parent && parent.userData.baseY !== undefined) {
+          parent.position.y = parent.userData.baseY + Math.sin(t * 0.7 + mesh.position.x) * 0.5;
+          parent.rotation.z = Math.sin(t * 0.9 + mesh.position.z * 0.1) * 0.05;
+        }
+      }
+    });
+    
+    // Subtle atmospheric RGB shift for China world
+    rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 0.8 + Math.sin(t * 1.5) * 0.0003;
   } else {
     // Original psychedelic mode
     const bgHue = (t * 0.03) % 1;
@@ -1429,7 +1959,7 @@ function animate() {
   }
 
   // Ground clamp: keep player walking on terrain
-  const activeGround = isDesertMode ? desertGround : psychedelicGround;
+  const activeGround = isChinaMode ? chinaGround : (isDesertMode ? desertGround : psychedelicGround);
   if (activeGround) {
     const playerObj = controls.getObject();
     // Ensure matrices are current, then cast from player object downward
@@ -1440,12 +1970,12 @@ function animate() {
     groundRaycaster.set(origin, rayDown);
     const hits = groundRaycaster.intersectObject(activeGround, false);
     const cameraLocalY = camera.position.y; // relative to controls' internal pitch object
-    const desiredEyeHeight = isDesertMode ? EYE_HEIGHT_DESERT : EYE_HEIGHT_PSY;
+    const desiredEyeHeight = isChinaMode ? EYE_HEIGHT_CHINA : (isDesertMode ? EYE_HEIGHT_DESERT : EYE_HEIGHT_PSY);
     if (hits.length > 0) {
       const groundY = hits[0].point.y;
       const desiredPlayerY = groundY + desiredEyeHeight - cameraLocalY;
       playerObj.position.y = THREE.MathUtils.lerp(playerObj.position.y, desiredPlayerY, Math.min(1, delta * 12));
-    } else if (!isDesertMode) {
+    } else if (!isDesertMode && !isChinaMode) {
       // Fallback on flat world: hold target eye height even if the ray misses
       const desiredPlayerY = desiredEyeHeight - cameraLocalY;
       playerObj.position.y = THREE.MathUtils.lerp(playerObj.position.y, desiredPlayerY, Math.min(1, delta * 12));
