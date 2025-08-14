@@ -290,7 +290,7 @@ function createPortal() {
   portalGroup.add(portalInner);
   
   // Add glow effect around portal
-  const glowGeo = new THREE.PlaneGeometry(10, 12);
+  const glowGeo = new THREE.PlaneGeometry(7, 8);
   const glowMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
@@ -298,7 +298,7 @@ function createPortal() {
     side: THREE.DoubleSide
   });
   const glow = new THREE.Mesh(glowGeo, glowMat);
-  glow.position.y = 3;
+  glow.position.y = 3.5;
   glow.position.z = -0.1;
   portalGroup.add(glow);
   
