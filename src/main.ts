@@ -83,6 +83,7 @@ scene.add(dir);
 const psychedelicMeshes: THREE.Mesh[] = [];
 const desertMeshes: THREE.Mesh[] = [];
 const angels: THREE.Group[] = [];
+const angelHalos: THREE.Sprite[] = [];
 const sacredSkySprites: THREE.Sprite[] = [];
 let portal: THREE.Mesh;
 let isDesertMode = false;
@@ -488,6 +489,12 @@ function createAngels() {
     
     angels.push(angel);
     desertWorld.add(angel);
+
+    // Add subtle dark halo behind angel to improve contrast against bright sky
+    const haloSize = 12 * angel.scale.x;
+    const halo = createAngelHaloSprite(haloSize);
+    desertWorld.add(halo);
+    angelHalos.push(halo);
   }
 }
 
@@ -657,6 +664,40 @@ function createAngelBillboard() {
     scene.add(sprite);
     angelSprite = sprite;
   });
+}
+
+// Subtle dark halo sprite used as backdrop for angels in bright desert sky
+function createAngelHaloSprite(size: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    const fallback = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x000000, opacity: 0.3, transparent: true }));
+    fallback.scale.set(size, size, 1);
+    return fallback;
+  }
+  const c = 128;
+  const r = 120;
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, r);
+  grad.addColorStop(0.0, 'rgba(0,0,0,0.38)');
+  grad.addColorStop(0.6, 'rgba(0,0,0,0.22)');
+  grad.addColorStop(1.0, 'rgba(0,0,0,0.0)');
+  ctx.clearRect(0, 0, 256, 256);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(c, c, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  mat.toneMapped = false;
+  mat.fog = false;
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(size, size, 1);
+  return sprite;
 }
 
 // Sacred geometry sky (non-desert): flower-of-life "stars"
@@ -1044,6 +1085,7 @@ const BASE_SPEED = 28 * 2.2;
 const groundRaycaster = new THREE.Raycaster();
 const rayDown = new THREE.Vector3(0, -1, 0);
 const tmpVec3 = new THREE.Vector3();
+const tmpVec3b = new THREE.Vector3();
 const EYE_HEIGHT_PSY = 5.0; // exaggerated for testing in psychedelic world
 const EYE_HEIGHT_DESERT = 3.2; // increase desert eye height as requested
 
@@ -1248,6 +1290,21 @@ function animate() {
         }
       });
     });
+
+    // Position halos slightly behind each angel along the camera view direction
+    for (let i = 0; i < angels.length; i++) {
+      const angel = angels[i];
+      const halo = angelHalos[i];
+      if (!halo) continue;
+      const toCamera = tmpVec3b.copy(camera.position).sub(angel.position).normalize();
+      const offset = 2.5;
+      halo.position.copy(angel.position).addScaledVector(toCamera, -offset);
+      // Align halo to face the camera (Sprite already faces camera but ensure stable)
+      halo.quaternion.copy(camera.quaternion);
+      // Keep halo scale proportional if angel scale changes over time (rare)
+      const targetSize = 12 * angel.scale.x;
+      halo.scale.set(targetSize, targetSize, 1);
+    }
   } else {
     // Original psychedelic mode
     const bgHue = (t * 0.03) % 1;
