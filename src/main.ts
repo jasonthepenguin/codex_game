@@ -87,6 +87,9 @@ const angels: THREE.Group[] = [];
 const angelHalos: THREE.Sprite[] = [];
 const sacredSkySprites: THREE.Sprite[] = [];
 const marchingFigures: THREE.Group[] = [];
+const psychedelicWalkables: THREE.Object3D[] = [];
+const desertWalkables: THREE.Object3D[] = [];
+const chinaWalkables: THREE.Object3D[] = [];
 let portal: THREE.Mesh;
 let chinaPortal: THREE.Mesh;
 let isDesertMode = false;
@@ -122,6 +125,7 @@ function addWorld() {
   floor.receiveShadow = true;
   psychedelicWorld.add(floor);
   psychedelicGround = floor;
+  psychedelicWalkables.push(floor);
 
   // Grid overlay
   const grid = new THREE.GridHelper(400, 120, 0xff00ff, 0x00ffff);
@@ -193,6 +197,7 @@ function createDesertWorld() {
   sand.receiveShadow = true;
   desertWorld.add(sand);
   desertGround = sand;
+  desertWalkables.push(sand);
 
   // Create pyramids
   const pyramidGeo = new THREE.ConeGeometry(20, 25, 4);
@@ -282,6 +287,7 @@ function createChinaWorld() {
   ground.receiveShadow = true;
   chinaWorld.add(ground);
   chinaGround = ground;
+  chinaWalkables.push(ground);
   
   // Create main roads/streets
   const roadMat = new THREE.MeshStandardMaterial({
@@ -296,6 +302,7 @@ function createChinaWorld() {
   const mainRoad = new THREE.Mesh(mainRoadGeo, roadMat);
   mainRoad.position.y = 0.01;
   chinaWorld.add(mainRoad);
+  chinaWalkables.push(mainRoad);
   
   // Cross streets (east-west)
   const crossRoadGeo = new THREE.PlaneGeometry(200, 16);
@@ -304,10 +311,12 @@ function createChinaWorld() {
   const crossRoad1 = new THREE.Mesh(crossRoadGeo, roadMat);
   crossRoad1.position.set(0, 0.01, -30);
   chinaWorld.add(crossRoad1);
+  chinaWalkables.push(crossRoad1);
   
   const crossRoad2 = new THREE.Mesh(crossRoadGeo, roadMat);
   crossRoad2.position.set(0, 0.01, 30);
   chinaWorld.add(crossRoad2);
+  chinaWalkables.push(crossRoad2);
   
   // Add road markings
   const markingMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -331,10 +340,12 @@ function createChinaWorld() {
   const leftSidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
   leftSidewalk.position.set(-13, 0.1, 0);
   chinaWorld.add(leftSidewalk);
+  chinaWalkables.push(leftSidewalk);
   
   const rightSidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
   rightSidewalk.position.set(13, 0.1, 0);
   chinaWorld.add(rightSidewalk);
+  chinaWalkables.push(rightSidewalk);
 
   // Create marching figures
   function createMarchingFigure() {
@@ -506,6 +517,8 @@ function createChinaWorld() {
     const base2 = new THREE.Mesh(platform2, platformMat);
     base2.position.y = 3;
     temple.add(base2);
+    // Upper platform is walkable
+    chinaWalkables.push(base2);
     
     // Main temple structure (red walls)
     const wallMat = new THREE.MeshStandardMaterial({ 
@@ -642,11 +655,20 @@ function createChinaWorld() {
       metalness: 0
     });
     
-    for (let i = 0; i < 8; i++) {
-      const stairGeo = new THREE.BoxGeometry(8 * scale, 0.5, 2);
+    // Stairs facing toward the temple entrance (highest step nearest the platform)
+    const steps = 8;
+    const stepHeight = 0.5;
+    const stepDepth = 2;
+    const topZ = 12 * scale; // align near front edge of upper platform (z ~ 12)
+    for (let i = 0; i < steps; i++) {
+      const stairGeo = new THREE.BoxGeometry(8 * scale, stepHeight, stepDepth);
       const stair = new THREE.Mesh(stairGeo, stairMat);
-      stair.position.set(0, i * 0.5, 14 * scale + i * 2);
+      const yCenter = (i + 0.5) * stepHeight; // center y for each step block; top step flush with platform
+      const zPos = topZ + (steps - 1 - i) * stepDepth; // farthest is lowest
+      stair.position.set(0, yCenter, zPos);
       temple.add(stair);
+      // Make stairs walkable
+      chinaWalkables.push(stair);
     }
     
     temple.position.set(x, 0, z);
@@ -2874,8 +2896,9 @@ function animate() {
     controls.moveForward(-velocity.z * delta);
   }
 
-  // Ground clamp: keep player walking on terrain
+  // Ground clamp: keep player walking on terrain and climb stairs/platforms
   const activeGround = isChinaMode ? chinaGround : (isDesertMode ? desertGround : psychedelicGround);
+  const activeWalkables = isChinaMode ? chinaWalkables : (isDesertMode ? desertWalkables : psychedelicWalkables);
   if (activeGround) {
     const playerObj = controls.getObject();
     // Ensure matrices are current, then cast from player object downward
@@ -2884,7 +2907,13 @@ function animate() {
     const origin = tmpVec3.setFromMatrixPosition(playerObj.matrixWorld);
     origin.y += 50;
     groundRaycaster.set(origin, rayDown);
-    const hits = groundRaycaster.intersectObject(activeGround, false);
+    // Prefer detailed walkable geometry; fall back to world ground if needed
+    let hits = activeWalkables.length
+      ? groundRaycaster.intersectObjects(activeWalkables, true)
+      : [] as THREE.Intersection[];
+    if (!hits.length) {
+      hits = groundRaycaster.intersectObject(activeGround, false);
+    }
     const cameraLocalY = camera.position.y; // relative to controls' internal pitch object
     const desiredEyeHeight = isChinaMode ? EYE_HEIGHT_CHINA : (isDesertMode ? EYE_HEIGHT_DESERT : EYE_HEIGHT_PSY);
     if (hits.length > 0) {
