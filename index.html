@@ -59,6 +59,15 @@
       </div>
     </div>
 
+    <!-- End sequence overlay (hidden until all artefacts collected) -->
+    <div id="end-overlay" style="position:fixed; inset:0; background:#ffffff; display:none; opacity:0; transition: opacity 1.2s ease; z-index:9999; pointer-events:none;">
+      <div id="end-content" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(1.02); text-align:center; color:#111; font-family:'Press Start 2P', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height:1.5; opacity:0; transition: opacity 1s ease, transform 1s ease;">
+        <h1 id="end-text" style="margin:0 0 16px; font-size:28px;">Thank you</h1>
+        <img id="end-img" src="/jason.jpg" alt="Jason" style="width:96px; height:96px; object-fit:cover; border-radius:50%; box-shadow:0 4px 16px rgba(0,0,0,0.15); margin:12px auto 8px; display:block;" />
+        <p id="end-credit" style="margin:8px 0 0; font-size:12px; color:#333;">Made with love and GPT-5 by Jason</p>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
   </html>

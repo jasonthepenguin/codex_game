@@ -3064,4 +3064,44 @@ function markGoalCompleted(which: 'mark' | 'gpu' | 'angel') {
                  + (goalItemAngel?.textContent?.includes('✅') ? 1 : 0)
                  + (goalItemGpu?.textContent?.includes('✅') ? 1 : 0);
   if (goalProgress) goalProgress.textContent = `Progress: ${progress} / 3`;
+
+  // Trigger end sequence when all artefacts are collected
+  if (progress === 3) {
+    startEndSequence();
+  }
+}
+
+// End sequence handling
+let endSequenceStarted = false;
+function startEndSequence() {
+  if (endSequenceStarted) return;
+  endSequenceStarted = true;
+  try {
+    // Hide HUD and release pointer lock so cursor shows
+    const goalUIEl = document.getElementById('goal') as HTMLDivElement | null;
+    if (goalUIEl) goalUIEl.style.display = 'none';
+    if ((controls as any).unlock) controls.unlock();
+
+    const overlayEl = document.getElementById('end-overlay') as HTMLDivElement | null;
+    const contentEl = document.getElementById('end-content') as HTMLDivElement | null;
+    if (!overlayEl) return;
+
+    // Wait 2 seconds, then fade to white
+    setTimeout(() => {
+      overlayEl.style.display = 'block';
+      // Ensure next frame to allow transition
+      requestAnimationFrame(() => {
+        overlayEl.style.opacity = '1';
+      });
+      // After fade, reveal content
+      setTimeout(() => {
+        if (contentEl) {
+          contentEl.style.opacity = '1';
+          contentEl.style.transform = 'translate(-50%,-50%) scale(1)';
+        }
+      }, 1200);
+    }, 2000);
+  } catch (e) {
+    // no-op fail safe
+  }
 }
