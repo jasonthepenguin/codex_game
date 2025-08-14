@@ -129,9 +129,12 @@ composer.addPass(glitchPass);
 
 // Movement
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+let isSprinting = false;
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const clock = new THREE.Clock();
+const BASE_SPEED = 16;
+const SPRINT_MULTIPLIER = 1.6;
 
 const onKeyDown = (event: KeyboardEvent) => {
   switch (event.code) {
@@ -143,6 +146,8 @@ const onKeyDown = (event: KeyboardEvent) => {
     case 'KeyS': moveBackward = true; break;
     case 'ArrowRight':
     case 'KeyD': moveRight = true; break;
+    case 'ShiftLeft':
+    case 'ShiftRight': isSprinting = true; break;
   }
 };
 
@@ -156,6 +161,8 @@ const onKeyUp = (event: KeyboardEvent) => {
     case 'KeyS': moveBackward = false; break;
     case 'ArrowRight':
     case 'KeyD': moveRight = false; break;
+    case 'ShiftLeft':
+    case 'ShiftRight': isSprinting = false; break;
   }
 };
 
@@ -203,7 +210,7 @@ function animate() {
 
   // FPS movement when locked
   if (controls.isLocked) {
-    const speed = 16; // base walk speed
+    const speed = BASE_SPEED * (isSprinting ? SPRINT_MULTIPLIER : 1); // base/sprint speed
     velocity.x -= velocity.x * 10.0 * delta;
     velocity.z -= velocity.z * 10.0 * delta;
 
