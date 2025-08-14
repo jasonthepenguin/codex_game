@@ -217,7 +217,7 @@ createDesertWorld();
 function createPortal() {
   // Create portal group
   const portalGroup = new THREE.Group();
-  portalGroup.position.set(0, 0, 0); // In front of player start position
+  portalGroup.position.set(0, 0, -15); // Further from player start position
   
   // Create arch frame using extruded shape
   const archShape = new THREE.Shape();
@@ -269,8 +269,8 @@ function createPortal() {
   const portalSurfaceGeo = new THREE.PlaneGeometry(6, 8);
   // Cut the plane to match arch shape using a custom shape
   const shape = new THREE.Shape();
-  const width = 3;
-  const height = 6;
+  const width = 2.8;
+  const height = 5.5;
   shape.moveTo(-width, 0);
   shape.lineTo(-width, height * 0.7);
   shape.quadraticCurveTo(-width, height, 0, height);
@@ -290,7 +290,7 @@ function createPortal() {
   portalGroup.add(portalInner);
   
   // Add glow effect around portal
-  const glowGeo = new THREE.PlaneGeometry(7, 8);
+  const glowGeo = new THREE.PlaneGeometry(6.5, 7);
   const glowMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
@@ -298,7 +298,7 @@ function createPortal() {
     side: THREE.DoubleSide
   });
   const glow = new THREE.Mesh(glowGeo, glowMat);
-  glow.position.y = 3.5;
+  glow.position.y = 3;
   glow.position.z = -0.1;
   portalGroup.add(glow);
   
