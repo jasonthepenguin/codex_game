@@ -269,7 +269,7 @@ function createChinaWorld() {
   chinaWorld.visible = false; // Start hidden
   scene.add(chinaWorld);
 
-  // Grey concrete ground
+  // Grey concrete ground with road texture
   const groundGeo = new THREE.PlaneGeometry(400, 400, 50, 50);
   groundGeo.rotateX(-Math.PI / 2);
   
@@ -282,6 +282,59 @@ function createChinaWorld() {
   ground.receiveShadow = true;
   chinaWorld.add(ground);
   chinaGround = ground;
+  
+  // Create main roads/streets
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2a2a,
+    roughness: 0.8,
+    metalness: 0.1
+  });
+  
+  // Main avenue (north-south)
+  const mainRoadGeo = new THREE.PlaneGeometry(20, 300);
+  mainRoadGeo.rotateX(-Math.PI / 2);
+  const mainRoad = new THREE.Mesh(mainRoadGeo, roadMat);
+  mainRoad.position.y = 0.01;
+  chinaWorld.add(mainRoad);
+  
+  // Cross streets (east-west)
+  const crossRoadGeo = new THREE.PlaneGeometry(200, 16);
+  crossRoadGeo.rotateX(-Math.PI / 2);
+  
+  const crossRoad1 = new THREE.Mesh(crossRoadGeo, roadMat);
+  crossRoad1.position.set(0, 0.01, -30);
+  chinaWorld.add(crossRoad1);
+  
+  const crossRoad2 = new THREE.Mesh(crossRoadGeo, roadMat);
+  crossRoad2.position.set(0, 0.01, 30);
+  chinaWorld.add(crossRoad2);
+  
+  // Add road markings
+  const markingMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const markingGeo = new THREE.PlaneGeometry(2, 8);
+  markingGeo.rotateX(-Math.PI / 2);
+  
+  for (let i = -140; i < 140; i += 20) {
+    const marking = new THREE.Mesh(markingGeo, markingMat);
+    marking.position.set(0, 0.02, i);
+    chinaWorld.add(marking);
+  }
+  
+  // Sidewalks
+  const sidewalkMat = new THREE.MeshStandardMaterial({
+    color: 0x7a7a7a,
+    roughness: 0.95,
+    metalness: 0
+  });
+  const sidewalkGeo = new THREE.BoxGeometry(6, 0.2, 300);
+  
+  const leftSidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
+  leftSidewalk.position.set(-13, 0.1, 0);
+  chinaWorld.add(leftSidewalk);
+  
+  const rightSidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
+  rightSidewalk.position.set(13, 0.1, 0);
+  chinaWorld.add(rightSidewalk);
 
   // Create marching figures
   function createMarchingFigure() {
@@ -431,7 +484,176 @@ function createChinaWorld() {
     chinaWorld.add(flag);
   });
 
-  // Add some buildings with Chinese architecture elements
+  // Create detailed Chinese temple with traditional architecture
+  function createChineseTemple(x: number, z: number, scale: number = 1) {
+    const temple = new THREE.Group();
+    
+    // Multi-tiered base platform
+    const platformMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b7355,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    
+    // Lower platform
+    const platform1 = new THREE.BoxGeometry(30 * scale, 2, 30 * scale);
+    const base1 = new THREE.Mesh(platform1, platformMat);
+    base1.position.y = 1;
+    temple.add(base1);
+    
+    // Upper platform
+    const platform2 = new THREE.BoxGeometry(24 * scale, 2, 24 * scale);
+    const base2 = new THREE.Mesh(platform2, platformMat);
+    base2.position.y = 3;
+    temple.add(base2);
+    
+    // Main temple structure (red walls)
+    const wallMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b0000,
+      roughness: 0.6,
+      metalness: 0.1
+    });
+    
+    // Main hall
+    const mainHall = new THREE.BoxGeometry(20 * scale, 20 * scale, 20 * scale);
+    const hall = new THREE.Mesh(mainHall, wallMat);
+    hall.position.y = 14 * scale;
+    temple.add(hall);
+    
+    // Columns
+    const columnGeo = new THREE.CylinderGeometry(1 * scale, 1.2 * scale, 18 * scale, 8);
+    const columnMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b0000,
+      roughness: 0.5,
+      metalness: 0.2
+    });
+    
+    const columnPositions = [
+      { x: -8, z: 8 }, { x: 0, z: 8 }, { x: 8, z: 8 },
+      { x: -8, z: -8 }, { x: 0, z: -8 }, { x: 8, z: -8 }
+    ];
+    
+    columnPositions.forEach(pos => {
+      const column = new THREE.Mesh(columnGeo, columnMat);
+      column.position.set(pos.x * scale, 13 * scale, pos.z * scale);
+      temple.add(column);
+    });
+    
+    // Multi-level pagoda roof with upturned edges
+    const roofMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b4513,
+      roughness: 0.6,
+      metalness: 0.1
+    });
+    
+    // Create curved roof shape
+    function createCurvedRoof(width: number, height: number, level: number) {
+      const roofGroup = new THREE.Group();
+      
+      // Main roof pyramid
+      const roofGeo = new THREE.ConeGeometry(width, height, 4);
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.rotation.y = Math.PI / 4;
+      roofGroup.add(roof);
+      
+      // Upturned edges
+      const edgeGeo = new THREE.ConeGeometry(width * 0.3, height * 0.5, 4);
+      const edges = [];
+      for (let i = 0; i < 4; i++) {
+        const edge = new THREE.Mesh(edgeGeo, roofMat);
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        edge.position.set(
+          Math.cos(angle) * width * 0.6,
+          -height * 0.3,
+          Math.sin(angle) * width * 0.6
+        );
+        edge.rotation.z = Math.PI / 6;
+        edges.push(edge);
+        roofGroup.add(edge);
+      }
+      
+      return roofGroup;
+    }
+    
+    // First roof level
+    const roof1 = createCurvedRoof(16 * scale, 8 * scale, 1);
+    roof1.position.y = 28 * scale;
+    temple.add(roof1);
+    
+    // Second roof level
+    const roof2 = createCurvedRoof(12 * scale, 6 * scale, 2);
+    roof2.position.y = 34 * scale;
+    temple.add(roof2);
+    
+    // Top roof level
+    const roof3 = createCurvedRoof(8 * scale, 4 * scale, 3);
+    roof3.position.y = 38 * scale;
+    temple.add(roof3);
+    
+    // Golden spire on top
+    const spireGeo = new THREE.ConeGeometry(1 * scale, 4 * scale, 8);
+    const spireMat = new THREE.MeshStandardMaterial({ 
+      color: 0xffd700,
+      metalness: 0.8,
+      roughness: 0.2,
+      emissive: 0xffd700,
+      emissiveIntensity: 0.1
+    });
+    const spire = new THREE.Mesh(spireGeo, spireMat);
+    spire.position.y = 42 * scale;
+    temple.add(spire);
+    
+    // Add decorative elements - golden accents
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      metalness: 0.7,
+      roughness: 0.3
+    });
+    
+    // Window frames
+    const windowGeo = new THREE.BoxGeometry(3 * scale, 4 * scale, 0.5 * scale);
+    const windowPositions = [
+      { x: 0, y: 14, z: 10.2 },
+      { x: -6, y: 14, z: 10.2 },
+      { x: 6, y: 14, z: 10.2 }
+    ];
+    
+    windowPositions.forEach(pos => {
+      const window = new THREE.Mesh(windowGeo, accentMat);
+      window.position.set(pos.x * scale, pos.y * scale, pos.z * scale);
+      temple.add(window);
+    });
+    
+    // Temple doors
+    const doorGeo = new THREE.BoxGeometry(4 * scale, 8 * scale, 0.5 * scale);
+    const doorMat = new THREE.MeshStandardMaterial({
+      color: 0x8b0000,
+      roughness: 0.4,
+      metalness: 0.2
+    });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, 8 * scale, 10.2 * scale);
+    temple.add(door);
+    
+    // Add stairs
+    const stairMat = new THREE.MeshStandardMaterial({
+      color: 0x696969,
+      roughness: 0.9,
+      metalness: 0
+    });
+    
+    for (let i = 0; i < 8; i++) {
+      const stairGeo = new THREE.BoxGeometry(8 * scale, 0.5, 2);
+      const stair = new THREE.Mesh(stairGeo, stairMat);
+      stair.position.set(0, i * 0.5, 14 * scale + i * 2);
+      temple.add(stair);
+    }
+    
+    temple.position.set(x, 0, z);
+    return temple;
+  }
+  
+  // Add smaller traditional buildings
   function createBuilding(x: number, z: number) {
     const building = new THREE.Group();
     
@@ -478,11 +700,16 @@ function createChinaWorld() {
     return building;
   }
   
-  // Add buildings
+  // Add main temple in the center
+  const mainTemple = createChineseTemple(0, -80, 1);
+  chinaWorld.add(mainTemple);
+  
+  // Add smaller buildings on sides
   const buildingPositions = [
     { x: -70, z: -50 },
     { x: 70, z: -50 },
-    { x: 0, z: -80 }
+    { x: -40, z: -120 },
+    { x: 40, z: -120 }
   ];
   
   buildingPositions.forEach(pos => {
@@ -534,6 +761,583 @@ function createChinaWorld() {
     );
     chinaWorld.add(lantern);
   }
+  
+  // Add street lamps along roads
+  function createStreetLamp(x: number, z: number) {
+    const lampGroup = new THREE.Group();
+    
+    // Lamp post
+    const postGeo = new THREE.CylinderGeometry(0.2, 0.3, 12, 8);
+    const postMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2a2a,
+      roughness: 0.8,
+      metalness: 0.2
+    });
+    const post = new THREE.Mesh(postGeo, postMat);
+    post.position.y = 6;
+    lampGroup.add(post);
+    
+    // Lamp fixture
+    const lampGeo = new THREE.SphereGeometry(1, 8, 8);
+    const lampMat = new THREE.MeshStandardMaterial({
+      color: 0xfff8dc,
+      emissive: 0xfff8dc,
+      emissiveIntensity: 0.5,
+      roughness: 0.3
+    });
+    const lamp = new THREE.Mesh(lampGeo, lampMat);
+    lamp.position.y = 12;
+    lampGroup.add(lamp);
+    
+    // Add point light
+    const light = new THREE.PointLight(0xfff8dc, 0.5, 20);
+    light.position.y = 12;
+    lampGroup.add(light);
+    
+    lampGroup.position.set(x, 0, z);
+    return lampGroup;
+  }
+  
+  // Place street lamps along main road
+  for (let z = -140; z <= 140; z += 40) {
+    const leftLamp = createStreetLamp(-16, z);
+    const rightLamp = createStreetLamp(16, z);
+    chinaWorld.add(leftLamp);
+    chinaWorld.add(rightLamp);
+  }
+  
+  // Add trees
+  function createTree(x: number, z: number) {
+    const treeGroup = new THREE.Group();
+    
+    // Trunk
+    const trunkGeo = new THREE.CylinderGeometry(0.8, 1, 8, 8);
+    const trunkMat = new THREE.MeshStandardMaterial({
+      color: 0x4a3c28,
+      roughness: 0.9
+    });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 4;
+    treeGroup.add(trunk);
+    
+    // Foliage (simple spheres for stylized look)
+    const foliageMat = new THREE.MeshStandardMaterial({
+      color: 0x2d5016,
+      roughness: 0.8
+    });
+    
+    const foliage1 = new THREE.Mesh(new THREE.SphereGeometry(3, 8, 8), foliageMat);
+    foliage1.position.set(0, 9, 0);
+    treeGroup.add(foliage1);
+    
+    const foliage2 = new THREE.Mesh(new THREE.SphereGeometry(2.5, 8, 8), foliageMat);
+    foliage2.position.set(-1.5, 8, 0);
+    treeGroup.add(foliage2);
+    
+    const foliage3 = new THREE.Mesh(new THREE.SphereGeometry(2.5, 8, 8), foliageMat);
+    foliage3.position.set(1.5, 8, 0);
+    treeGroup.add(foliage3);
+    
+    treeGroup.position.set(x, 0, z);
+    return treeGroup;
+  }
+  
+  // Add trees in various locations
+  const treePositions = [
+    { x: -30, z: 60 }, { x: 30, z: 60 },
+    { x: -50, z: 80 }, { x: 50, z: 80 },
+    { x: -25, z: -10 }, { x: 25, z: -10 },
+    { x: -60, z: 0 }, { x: 60, z: 0 }
+  ];
+  
+  treePositions.forEach(pos => {
+    const tree = createTree(pos.x, pos.z);
+    chinaWorld.add(tree);
+  });
+  
+  // Add stone lions at temple entrance
+  function createStoneLion(x: number, z: number, facingLeft: boolean = true) {
+    const lionGroup = new THREE.Group();
+    
+    // Body
+    const bodyGeo = new THREE.BoxGeometry(2, 3, 4);
+    const stoneMat = new THREE.MeshStandardMaterial({
+      color: 0x8b7355,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    const body = new THREE.Mesh(bodyGeo, stoneMat);
+    body.position.y = 1.5;
+    lionGroup.add(body);
+    
+    // Head
+    const headGeo = new THREE.SphereGeometry(1.5, 8, 8);
+    const head = new THREE.Mesh(headGeo, stoneMat);
+    head.position.set(0, 3.5, facingLeft ? -1.5 : 1.5);
+    lionGroup.add(head);
+    
+    // Base
+    const baseGeo = new THREE.BoxGeometry(3, 1, 5);
+    const base = new THREE.Mesh(baseGeo, stoneMat);
+    base.position.y = 0.5;
+    lionGroup.add(base);
+    
+    lionGroup.position.set(x, 0, z);
+    if (!facingLeft) lionGroup.rotation.y = Math.PI;
+    return lionGroup;
+  }
+  
+  // Place stone lions at temple entrance
+  const leftLion = createStoneLion(-8, -55, true);
+  const rightLion = createStoneLion(8, -55, false);
+  chinaWorld.add(leftLion);
+  chinaWorld.add(rightLion);
+  
+  // Add traditional gate/archway
+  function createGate(x: number, z: number) {
+    const gateGroup = new THREE.Group();
+    
+    // Pillars
+    const pillarGeo = new THREE.CylinderGeometry(1, 1, 15, 8);
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: 0x8b0000,
+      roughness: 0.6,
+      metalness: 0.1
+    });
+    
+    const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+    leftPillar.position.set(-10, 7.5, 0);
+    gateGroup.add(leftPillar);
+    
+    const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+    rightPillar.position.set(10, 7.5, 0);
+    gateGroup.add(rightPillar);
+    
+    // Top beam
+    const beamGeo = new THREE.BoxGeometry(22, 2, 2);
+    const beam = new THREE.Mesh(beamGeo, pillarMat);
+    beam.position.y = 16;
+    gateGroup.add(beam);
+    
+    // Decorative roof
+    const roofGeo = new THREE.ConeGeometry(15, 5, 4);
+    const roofMat = new THREE.MeshStandardMaterial({
+      color: 0x8b4513,
+      roughness: 0.6
+    });
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = 19;
+    roof.rotation.y = Math.PI / 4;
+    gateGroup.add(roof);
+    
+    gateGroup.position.set(x, 0, z);
+    return gateGroup;
+  }
+  
+  // Add gates at key locations
+  const gate1 = createGate(0, 0);
+  const gate2 = createGate(0, -140);
+  chinaWorld.add(gate1);
+  chinaWorld.add(gate2);
+  
+  // Add propaganda billboards
+  function createBillboard(x: number, y: number, z: number, text: string = "前进") {
+    const billboardGroup = new THREE.Group();
+    
+    // Frame
+    const frameGeo = new THREE.BoxGeometry(12, 8, 0.5);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2a2a,
+      roughness: 0.8
+    });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    billboardGroup.add(frame);
+    
+    // Poster
+    const posterGeo = new THREE.PlaneGeometry(11, 7);
+    const posterMat = new THREE.MeshStandardMaterial({
+      color: 0xff0000,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.1
+    });
+    const poster = new THREE.Mesh(posterGeo, posterMat);
+    poster.position.z = 0.3;
+    billboardGroup.add(poster);
+    
+    // Text (simplified)
+    const textGeo = new THREE.PlaneGeometry(8, 2);
+    const textMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const textMesh = new THREE.Mesh(textGeo, textMat);
+    textMesh.position.z = 0.4;
+    billboardGroup.add(textMesh);
+    
+    billboardGroup.position.set(x, y, z);
+    return billboardGroup;
+  }
+  
+  // Add billboards
+  const billboard1 = createBillboard(-40, 10, 50, "革命");
+  const billboard2 = createBillboard(40, 10, 50, "前进");
+  chinaWorld.add(billboard1);
+  chinaWorld.add(billboard2);
+  
+  // Create more Chinese residential buildings
+  function createApartmentBlock(x: number, z: number) {
+    const building = new THREE.Group();
+    
+    // Main building structure (typical Chinese apartment block)
+    const buildingGeo = new THREE.BoxGeometry(25, 40, 20);
+    const buildingMat = new THREE.MeshStandardMaterial({
+      color: 0x999999,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    const main = new THREE.Mesh(buildingGeo, buildingMat);
+    main.position.y = 20;
+    building.add(main);
+    
+    // Windows grid
+    const windowGeo = new THREE.PlaneGeometry(2, 3);
+    const windowMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
+    
+    for (let floor = 0; floor < 10; floor++) {
+      for (let col = 0; col < 5; col++) {
+        const window1 = new THREE.Mesh(windowGeo, windowMat);
+        window1.position.set(
+          -10 + col * 5,
+          5 + floor * 4,
+          10.1
+        );
+        building.add(window1);
+        
+        const window2 = new THREE.Mesh(windowGeo, windowMat);
+        window2.position.set(
+          -10 + col * 5,
+          5 + floor * 4,
+          -10.1
+        );
+        building.add(window2);
+      }
+    }
+    
+    // Rooftop water tanks (common in China)
+    const tankGeo = new THREE.CylinderGeometry(1.5, 1.5, 3, 8);
+    const tankMat = new THREE.MeshStandardMaterial({ color: 0x4169e1 });
+    
+    const tank1 = new THREE.Mesh(tankGeo, tankMat);
+    tank1.position.set(-5, 41.5, -5);
+    building.add(tank1);
+    
+    const tank2 = new THREE.Mesh(tankGeo, tankMat);
+    tank2.position.set(5, 41.5, 5);
+    building.add(tank2);
+    
+    // Add some laundry lines (characteristic of Chinese apartments)
+    const lineGeo = new THREE.CylinderGeometry(0.05, 0.05, 15, 4);
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+    
+    for (let i = 0; i < 3; i++) {
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      line.rotation.z = Math.PI / 2;
+      line.position.set(0, 35 - i * 8, 10.5);
+      building.add(line);
+    }
+    
+    building.position.set(x, 0, z);
+    return building;
+  }
+  
+  // Add more apartment blocks
+  const apartmentPositions = [
+    { x: -90, z: -80 },
+    { x: 90, z: -80 },
+    { x: -90, z: 40 },
+    { x: 90, z: 40 },
+    { x: -120, z: 0 },
+    { x: 120, z: 0 }
+  ];
+  
+  apartmentPositions.forEach(pos => {
+    const apartment = createApartmentBlock(pos.x, pos.z);
+    chinaWorld.add(apartment);
+  });
+  
+  // Create traditional hutong-style houses
+  function createHutong(x: number, z: number) {
+    const hutong = new THREE.Group();
+    
+    // Low traditional house with courtyard
+    const wallGeo = new THREE.BoxGeometry(12, 8, 12);
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0x8b7355,
+      roughness: 0.9
+    });
+    const walls = new THREE.Mesh(wallGeo, wallMat);
+    walls.position.y = 4;
+    hutong.add(walls);
+    
+    // Traditional tiled roof
+    const roofGeo = new THREE.ConeGeometry(10, 4, 4);
+    const roofMat = new THREE.MeshStandardMaterial({
+      color: 0x555555,
+      roughness: 0.7
+    });
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = 10;
+    roof.rotation.y = Math.PI / 4;
+    hutong.add(roof);
+    
+    // Courtyard walls
+    const courtyardWallGeo = new THREE.BoxGeometry(0.5, 4, 8);
+    const courtyardWall1 = new THREE.Mesh(courtyardWallGeo, wallMat);
+    courtyardWall1.position.set(6.25, 2, 0);
+    hutong.add(courtyardWall1);
+    
+    const courtyardWall2 = new THREE.Mesh(courtyardWallGeo, wallMat);
+    courtyardWall2.position.set(-6.25, 2, 0);
+    hutong.add(courtyardWall2);
+    
+    // Red door
+    const doorGeo = new THREE.BoxGeometry(2, 4, 0.2);
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x8b0000 });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, 2, 6.1);
+    hutong.add(door);
+    
+    hutong.position.set(x, 0, z);
+    return hutong;
+  }
+  
+  // Add hutong houses
+  const hutongPositions = [
+    { x: -30, z: 90 },
+    { x: 0, z: 90 },
+    { x: 30, z: 90 },
+    { x: -45, z: 110 },
+    { x: 45, z: 110 }
+  ];
+  
+  hutongPositions.forEach(pos => {
+    const hutong = createHutong(pos.x, pos.z);
+    chinaWorld.add(hutong);
+  });
+  
+  // Create scared civilian figures
+  const scaredCivilians: THREE.Group[] = [];
+  
+  function createScaredCivilian(type: 'running' | 'cowering' | 'hiding') {
+    const civilian = new THREE.Group();
+    
+    // Body
+    const bodyGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.2, 6);
+    const bodyMat = new THREE.MeshStandardMaterial({ 
+      color: type === 'hiding' ? 0x4a4a4a : 0x6b6b6b // darker clothes
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.6;
+    civilian.add(body);
+    
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.18, 6, 6);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 1.4;
+    civilian.add(head);
+    
+    // Hair
+    const hairGeo = new THREE.SphereGeometry(0.2, 6, 6);
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+    const hair = new THREE.Mesh(hairGeo, hairMat);
+    hair.position.y = 1.5;
+    hair.scale.y = 0.6;
+    civilian.add(hair);
+    
+    // Arms
+    const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 4);
+    const armMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+    
+    const leftArm = new THREE.Mesh(armGeo, armMat);
+    const rightArm = new THREE.Mesh(armGeo, armMat);
+    
+    // Pose based on type
+    if (type === 'running') {
+      // Running pose
+      body.rotation.x = 0.3;
+      leftArm.position.set(-0.3, 0.9, 0.2);
+      leftArm.rotation.x = -0.8;
+      leftArm.rotation.z = 0.2;
+      rightArm.position.set(0.3, 0.9, -0.2);
+      rightArm.rotation.x = 0.8;
+      rightArm.rotation.z = -0.2;
+      
+      // Legs in running position
+      const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 4);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+      
+      const leftLeg = new THREE.Mesh(legGeo, legMat);
+      leftLeg.position.set(-0.15, 0.4, -0.3);
+      leftLeg.rotation.x = 0.6;
+      civilian.add(leftLeg);
+      
+      const rightLeg = new THREE.Mesh(legGeo, legMat);
+      rightLeg.position.set(0.15, 0.4, 0.3);
+      rightLeg.rotation.x = -0.6;
+      civilian.add(rightLeg);
+    } else if (type === 'cowering') {
+      // Cowering pose - crouched down
+      body.scale.y = 0.7;
+      body.position.y = 0.4;
+      head.position.y = 1.0;
+      hair.position.y = 1.1;
+      
+      // Arms covering head
+      leftArm.position.set(-0.2, 1.0, 0);
+      leftArm.rotation.x = -2.5;
+      leftArm.rotation.z = 0.8;
+      rightArm.position.set(0.2, 1.0, 0);
+      rightArm.rotation.x = -2.5;
+      rightArm.rotation.z = -0.8;
+      
+      // Bent legs
+      const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.6, 4);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+      
+      const leftLeg = new THREE.Mesh(legGeo, legMat);
+      leftLeg.position.set(-0.15, 0.3, 0);
+      leftLeg.rotation.x = -0.3;
+      civilian.add(leftLeg);
+      
+      const rightLeg = new THREE.Mesh(legGeo, legMat);
+      rightLeg.position.set(0.15, 0.3, 0);
+      rightLeg.rotation.x = -0.3;
+      civilian.add(rightLeg);
+    } else { // hiding
+      // Pressed against wall pose
+      body.rotation.y = Math.PI / 2;
+      leftArm.position.set(-0.3, 0.9, 0);
+      leftArm.rotation.z = 0.6;
+      rightArm.position.set(0.3, 0.9, 0);
+      rightArm.rotation.z = -0.6;
+      
+      // Normal legs but close together
+      const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 4);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+      
+      const leftLeg = new THREE.Mesh(legGeo, legMat);
+      leftLeg.position.set(-0.1, 0.4, 0);
+      civilian.add(leftLeg);
+      
+      const rightLeg = new THREE.Mesh(legGeo, legMat);
+      rightLeg.position.set(0.1, 0.4, 0);
+      civilian.add(rightLeg);
+    }
+    
+    civilian.add(leftArm);
+    civilian.add(rightArm);
+    
+    civilian.userData.type = type;
+    civilian.userData.animPhase = Math.random() * Math.PI * 2;
+    
+    return civilian;
+  }
+  
+  // Place scared civilians around the scene
+  const civilianSpots = [
+    { x: -25, z: 15, type: 'running' as const },
+    { x: 35, z: -5, type: 'cowering' as const },
+    { x: -60, z: -20, type: 'hiding' as const },
+    { x: 70, z: 25, type: 'running' as const },
+    { x: -40, z: 70, type: 'cowering' as const },
+    { x: 20, z: 60, type: 'hiding' as const },
+    { x: -80, z: 10, type: 'running' as const },
+    { x: 85, z: -30, type: 'cowering' as const },
+    { x: -15, z: -60, type: 'hiding' as const },
+    { x: 50, z: -70, type: 'running' as const },
+    { x: -70, z: 60, type: 'cowering' as const },
+    { x: 0, z: 40, type: 'running' as const }
+  ];
+  
+  civilianSpots.forEach(spot => {
+    const civilian = createScaredCivilian(spot.type);
+    civilian.position.set(spot.x, 0, spot.z);
+    
+    // Random rotation except for hiding civilians
+    if (spot.type !== 'hiding') {
+      civilian.rotation.y = Math.random() * Math.PI * 2;
+    }
+    
+    scaredCivilians.push(civilian);
+    chinaWorld.add(civilian);
+  });
+  
+  // Store reference for animation
+  chinaWorld.userData.scaredCivilians = scaredCivilians;
+  
+  // Add bicycles (common in China)
+  function createBicycle(x: number, z: number) {
+    const bike = new THREE.Group();
+    
+    // Frame
+    const frameGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.5, 4);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+    
+    const frame1 = new THREE.Mesh(frameGeo, frameMat);
+    frame1.rotation.z = Math.PI / 3;
+    frame1.position.set(0, 0.5, 0);
+    bike.add(frame1);
+    
+    const frame2 = new THREE.Mesh(frameGeo, frameMat);
+    frame2.rotation.z = -Math.PI / 3;
+    frame2.position.set(0.4, 0.5, 0);
+    bike.add(frame2);
+    
+    // Wheels
+    const wheelGeo = new THREE.TorusGeometry(0.3, 0.05, 4, 12);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+    
+    const frontWheel = new THREE.Mesh(wheelGeo, wheelMat);
+    frontWheel.position.set(0.7, 0.3, 0);
+    frontWheel.rotation.y = Math.PI / 2;
+    bike.add(frontWheel);
+    
+    const backWheel = new THREE.Mesh(wheelGeo, wheelMat);
+    backWheel.position.set(-0.7, 0.3, 0);
+    backWheel.rotation.y = Math.PI / 2;
+    bike.add(backWheel);
+    
+    // Handlebars
+    const handlebarGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 4);
+    const handlebar = new THREE.Mesh(handlebarGeo, frameMat);
+    handlebar.rotation.z = Math.PI / 2;
+    handlebar.position.set(0.5, 0.9, 0);
+    bike.add(handlebar);
+    
+    // Seat
+    const seatGeo = new THREE.BoxGeometry(0.2, 0.05, 0.15);
+    const seatMat = new THREE.MeshStandardMaterial({ color: 0x4a3c28 });
+    const seat = new THREE.Mesh(seatGeo, seatMat);
+    seat.position.set(-0.2, 0.85, 0);
+    bike.add(seat);
+    
+    bike.position.set(x, 0, z);
+    bike.rotation.y = Math.random() * Math.PI * 2;
+    return bike;
+  }
+  
+  // Add scattered bicycles
+  const bikePositions = [
+    { x: -35, z: 25 },
+    { x: 45, z: -15 },
+    { x: -55, z: -40 },
+    { x: 65, z: 35 },
+    { x: -20, z: 75 },
+    { x: 25, z: -55 }
+  ];
+  
+  bikePositions.forEach(pos => {
+    const bike = createBicycle(pos.x, pos.z);
+    chinaWorld.add(bike);
+  });
 }
 
 addWorld();
@@ -1537,17 +2341,23 @@ function animate() {
   const chinaPortalGroupPos = chinaPortal.userData.portalGroup ? chinaPortal.userData.portalGroup.position : chinaPortal.position;
   const chinaPortalDistance = playerPos.distanceTo(chinaPortalGroupPos);
   
-  // White portal collision logic (psychedelic <-> desert)
+  // White portal collision logic (psychedelic/china <-> desert)
   if (portalDistance < 3) {
     // If player is in portal range and has left the portal since last transition
-    if (hasLeftPortal && !isChinaMode) {
+    if (hasLeftPortal) {
       if (!isDesertMode) {
-        // Enter desert world
+        // Enter desert world (from either psychedelic or china)
         isDesertMode = true;
         hasLeftPortal = false; // Mark that we need to leave portal before next transition
         
-        // Switch worlds
-        psychedelicWorld.visible = false;
+        // Switch worlds - hide whichever world we're coming from
+        if (isChinaMode) {
+          chinaWorld.visible = false;
+          isChinaMode = false;
+          hasLeftChinaPortal = true; // Reset china portal state
+        } else {
+          psychedelicWorld.visible = false;
+        }
         desertWorld.visible = true;
         
         // Change environment
@@ -1562,6 +2372,11 @@ function animate() {
         // Show Angel only in desert (if not collected)
         if (angelSprite) angelSprite.visible = !hasCollectedAngel;
         
+        // Hide green portal in desert world
+        if (chinaPortal.userData.portalGroup) {
+          chinaPortal.userData.portalGroup.visible = false;
+        }
+        
         // Reduce bloom for desert (less intense glow)
         bloomPass.strength = 2.5;
         setTimeout(() => { bloomPass.strength = 0.5; }, 500);
@@ -1569,7 +2384,7 @@ function animate() {
         // No portal glitch: set RGB shift to desert baseline immediately
         rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 1.5;
       } else {
-        // Return to psychedelic world
+        // Return to psychedelic world (always return to psychedelic from desert via white portal)
         isDesertMode = false;
         hasLeftPortal = false; // Mark that we need to leave portal before next transition
         
@@ -1589,6 +2404,11 @@ function animate() {
         }
         // Hide Angel outside desert
         if (angelSprite) angelSprite.visible = false;
+        
+        // Show green portal again in psychedelic world
+        if (chinaPortal.userData.portalGroup) {
+          chinaPortal.userData.portalGroup.visible = true;
+        }
         
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
@@ -1616,11 +2436,11 @@ function animate() {
         psychedelicWorld.visible = false;
         chinaWorld.visible = true;
         
-        // Change environment to Cultural Revolution China atmosphere
-        scene.background = new THREE.Color(0x666666); // Grey overcast sky
-        scene.fog = new THREE.Fog(0x666666, 20, 250); // Grey fog
-        hemi.color.setHex(0xcccccc); // Dim white light
-        hemi.groundColor.setHex(0x555555); // Grey ground
+        // Change environment to Cultural Revolution China atmosphere with sunset sky
+        scene.background = new THREE.Color(0xf4a460); // Sandy brown/sunset color
+        scene.fog = new THREE.Fog(0xe6c8a0, 20, 250); // Warm fog
+        hemi.color.setHex(0xffd4a3); // Warm sunset light
+        hemi.groundColor.setHex(0x8b4513); // Warm brown ground
         
         // Hide Mark Chen in China world
         if (staffSprite) staffSprite.visible = false;
@@ -1628,10 +2448,7 @@ function animate() {
         // Hide Angel in China world
         if (angelSprite) angelSprite.visible = false;
         
-        // Hide white portal in China world
-        if (portal.userData.portalGroup) {
-          portal.userData.portalGroup.visible = false;
-        }
+        // Keep white portal visible in China world (allow travel to desert)
         
         // Reduce bloom for more austere look
         bloomPass.strength = 2.0;
@@ -1661,10 +2478,7 @@ function animate() {
         // Hide Angel outside desert
         if (angelSprite) angelSprite.visible = false;
         
-        // Show white portal again when back in psychedelic world
-        if (portal.userData.portalGroup) {
-          portal.userData.portalGroup.visible = true;
-        }
+        // White portal is always visible (no need to show it again)
         
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
@@ -1835,6 +2649,108 @@ function animate() {
     
     // Subtle atmospheric RGB shift for China world
     rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 0.8 + Math.sin(t * 1.5) * 0.0003;
+    
+    // Animate scared civilians
+    const scaredCivilians = chinaWorld.userData.scaredCivilians;
+    if (scaredCivilians) {
+      scaredCivilians.forEach((civilian, idx) => {
+        const type = civilian.userData.type;
+        const phase = civilian.userData.animPhase;
+        
+        if (type === 'running') {
+          // Running movement - move forward and bob
+          const runSpeed = 2 + Math.sin(phase) * 0.5;
+          const runTime = t * runSpeed + phase;
+          
+          // Update position (run in circles or back and forth)
+          const pathRadius = 15 + idx * 3;
+          civilian.position.x = civilian.userData.baseX || civilian.position.x;
+          civilian.position.z = civilian.userData.baseZ || civilian.position.z;
+          
+          if (!civilian.userData.baseX) {
+            civilian.userData.baseX = civilian.position.x;
+            civilian.userData.baseZ = civilian.position.z;
+          }
+          
+          // Create a running path
+          const pathAngle = runTime * 0.3;
+          civilian.position.x = civilian.userData.baseX + Math.sin(pathAngle) * pathRadius;
+          civilian.position.z = civilian.userData.baseZ + Math.cos(pathAngle) * pathRadius * 0.5;
+          
+          // Face direction of movement
+          civilian.rotation.y = pathAngle + Math.PI / 2;
+          
+          // Running bob
+          civilian.position.y = Math.abs(Math.sin(runTime * 8)) * 0.3;
+          
+          // Arm swing animation
+          const leftArm = civilian.children.find(child => child.position.x < 0 && child.position.y > 0.5);
+          const rightArm = civilian.children.find(child => child.position.x > 0 && child.position.y > 0.5);
+          if (leftArm) leftArm.rotation.x = -0.8 + Math.sin(runTime * 8) * 0.6;
+          if (rightArm) rightArm.rotation.x = 0.8 + Math.sin(runTime * 8 + Math.PI) * 0.6;
+          
+          // Leg movement
+          const legs = civilian.children.filter(child => 
+            child.geometry instanceof THREE.CylinderGeometry && child.position.y < 0.5
+          );
+          if (legs[0]) legs[0].rotation.x = Math.sin(runTime * 8) * 0.8;
+          if (legs[1]) legs[1].rotation.x = -Math.sin(runTime * 8) * 0.8;
+        } else if (type === 'cowering') {
+          // Cowering animation - trembling and looking around
+          const trembleTime = t * 3 + phase;
+          
+          // Subtle trembling
+          civilian.position.x = (civilian.userData.baseX || civilian.position.x) + Math.sin(trembleTime * 5) * 0.02;
+          civilian.position.z = (civilian.userData.baseZ || civilian.position.z) + Math.cos(trembleTime * 5) * 0.02;
+          
+          if (!civilian.userData.baseX) {
+            civilian.userData.baseX = civilian.position.x;
+            civilian.userData.baseZ = civilian.position.z;
+          }
+          
+          // Head looking around fearfully
+          const head = civilian.children.find(child => 
+            child.geometry instanceof THREE.SphereGeometry && child.position.y > 0.8
+          );
+          if (head) {
+            head.rotation.y = Math.sin(trembleTime * 0.7) * 0.4;
+            head.rotation.x = Math.sin(trembleTime * 0.5 + phase) * 0.2 - 0.2;
+          }
+          
+          // Arms shaking slightly
+          const arms = civilian.children.filter(child => 
+            child.geometry instanceof THREE.CylinderGeometry && 
+            child.position.y > 0.5 && child.scale.x < 0.2
+          );
+          arms.forEach((arm, i) => {
+            arm.rotation.z = (i === 0 ? 0.8 : -0.8) + Math.sin(trembleTime * 8 + i) * 0.1;
+          });
+        } else if (type === 'hiding') {
+          // Hiding animation - peeking and ducking
+          const hideTime = t * 0.8 + phase;
+          
+          // Occasionally peek out
+          const peekCycle = Math.sin(hideTime) > 0.5;
+          const body = civilian.children.find(child => 
+            child.geometry instanceof THREE.CylinderGeometry && child.scale.x > 0.2
+          );
+          
+          if (body) {
+            body.position.z = peekCycle ? 0.3 : 0;
+            body.rotation.y = Math.PI / 2 + (peekCycle ? 0.3 : 0);
+          }
+          
+          // Head movement when peeking
+          const head = civilian.children.find(child => 
+            child.geometry instanceof THREE.SphereGeometry && child.position.y > 1
+          );
+          if (head) {
+            head.rotation.y = peekCycle ? -0.5 : 0;
+            head.position.z = peekCycle ? 0.2 : 0;
+          }
+        }
+      });
+    }
   } else {
     // Original psychedelic mode
     const bgHue = (t * 0.03) % 1;
