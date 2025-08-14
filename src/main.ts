@@ -87,6 +87,9 @@ let portal: THREE.Mesh;
 let isDesertMode = false;
 let psychedelicWorld: THREE.Group;
 let desertWorld: THREE.Group;
+// Ground references for raycasting
+let psychedelicGround: THREE.Mesh | null = null;
+let desertGround: THREE.Mesh | null = null;
 let hasLeftPortal = true; // Track if player has left portal area
 let staffSprite: THREE.Sprite | null = null;
 let staffNameplateSprite: THREE.Sprite | null = null;
@@ -109,6 +112,7 @@ function addWorld() {
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.receiveShadow = true;
   psychedelicWorld.add(floor);
+  psychedelicGround = floor;
 
   // Grid overlay
   const grid = new THREE.GridHelper(400, 120, 0xff00ff, 0x00ffff);
@@ -179,6 +183,7 @@ function createDesertWorld() {
   const sand = new THREE.Mesh(sandGeo, sandMat);
   sand.receiveShadow = true;
   desertWorld.add(sand);
+  desertGround = sand;
 
   // Create pyramids
   const pyramidGeo = new THREE.ConeGeometry(20, 25, 4);
@@ -789,6 +794,12 @@ const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const clock = new THREE.Clock();
 const BASE_SPEED = 28 * 2.2;
+// Ground following helpers
+const groundRaycaster = new THREE.Raycaster();
+const rayDown = new THREE.Vector3(0, -1, 0);
+const tmpVec3 = new THREE.Vector3();
+const EYE_HEIGHT_PSY = 5.0; // exaggerated for testing in psychedelic world
+const EYE_HEIGHT_DESERT = 3.2; // increase desert eye height as requested
 
 const onKeyDown = (event: KeyboardEvent) => {
   switch (event.code) {
@@ -1102,6 +1113,30 @@ function animate() {
 
     controls.moveRight(-velocity.x * delta);
     controls.moveForward(-velocity.z * delta);
+  }
+
+  // Ground clamp: keep player walking on terrain
+  const activeGround = isDesertMode ? desertGround : psychedelicGround;
+  if (activeGround) {
+    const playerObj = controls.getObject();
+    // Ensure matrices are current, then cast from player object downward
+    playerObj.updateMatrixWorld();
+    camera.updateMatrixWorld();
+    const origin = tmpVec3.setFromMatrixPosition(playerObj.matrixWorld);
+    origin.y += 50;
+    groundRaycaster.set(origin, rayDown);
+    const hits = groundRaycaster.intersectObject(activeGround, false);
+    const cameraLocalY = camera.position.y; // relative to controls' internal pitch object
+    const desiredEyeHeight = isDesertMode ? EYE_HEIGHT_DESERT : EYE_HEIGHT_PSY;
+    if (hits.length > 0) {
+      const groundY = hits[0].point.y;
+      const desiredPlayerY = groundY + desiredEyeHeight - cameraLocalY;
+      playerObj.position.y = THREE.MathUtils.lerp(playerObj.position.y, desiredPlayerY, Math.min(1, delta * 12));
+    } else if (!isDesertMode) {
+      // Fallback on flat world: hold target eye height even if the ray misses
+      const desiredPlayerY = desiredEyeHeight - cameraLocalY;
+      playerObj.position.y = THREE.MathUtils.lerp(playerObj.position.y, desiredPlayerY, Math.min(1, delta * 12));
+    }
   }
 
   composer.render();
