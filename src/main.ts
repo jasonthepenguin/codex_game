@@ -52,6 +52,7 @@ scene.add(dir);
 // World geometry helpers
 const psychedelicMeshes: THREE.Mesh[] = [];
 const desertMeshes: THREE.Mesh[] = [];
+const angels: THREE.Group[] = [];
 let portal: THREE.Mesh;
 let isDesertMode = false;
 let psychedelicWorld: THREE.Group;
@@ -212,6 +213,236 @@ function createDesertWorld() {
 
 addWorld();
 createDesertWorld();
+createAngels();
+
+// Create biblically accurate angels
+function createAngels() {
+  // Create 3-4 different types of angels
+  
+  // Type 1: Ophanim (wheels within wheels with many eyes)
+  function createOphanim() {
+    const ophanim = new THREE.Group();
+    
+    // Outer ring
+    const outerRingGeo = new THREE.TorusGeometry(4, 0.5, 8, 24);
+    const outerRingMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0xffa500,
+      emissiveIntensity: 0.5,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
+    ophanim.add(outerRing);
+    
+    // Inner ring perpendicular
+    const innerRing = new THREE.Mesh(outerRingGeo.clone(), outerRingMat.clone());
+    innerRing.rotation.x = Math.PI / 2;
+    innerRing.scale.setScalar(0.7);
+    ophanim.add(innerRing);
+    
+    // Add eyes around the rings
+    const eyeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+    const eyeMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: 1
+    });
+    
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      const eye = new THREE.Mesh(eyeGeo, eyeMat);
+      eye.position.set(
+        Math.cos(angle) * 4,
+        0,
+        Math.sin(angle) * 4
+      );
+      ophanim.add(eye);
+      
+      // Add pupils
+      const pupilGeo = new THREE.SphereGeometry(0.1, 8, 8);
+      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.copy(eye.position);
+      pupil.position.multiplyScalar(1.02);
+      ophanim.add(pupil);
+    }
+    
+    return ophanim;
+  }
+  
+  // Type 2: Seraphim (six wings with eyes)
+  function createSeraphim() {
+    const seraphim = new THREE.Group();
+    
+    // Central body (glowing sphere)
+    const bodyGeo = new THREE.SphereGeometry(1.5, 32, 32);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffd700,
+      emissiveIntensity: 0.8,
+      metalness: 0.3,
+      roughness: 0.5
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    seraphim.add(body);
+    
+    // Create wings (3 pairs = 6 wings)
+    const wingShape = new THREE.Shape();
+    wingShape.moveTo(0, 0);
+    wingShape.quadraticCurveTo(2, 1, 3, 0);
+    wingShape.quadraticCurveTo(2.5, -0.5, 2, -1);
+    wingShape.quadraticCurveTo(1, -0.5, 0, 0);
+    
+    const wingGeo = new THREE.ExtrudeGeometry(wingShape, {
+      depth: 0.2,
+      bevelEnabled: true,
+      bevelThickness: 0.1,
+      bevelSize: 0.1,
+      bevelSegments: 2
+    });
+    
+    const wingMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffd700,
+      emissiveIntensity: 0.3,
+      metalness: 0.6,
+      roughness: 0.4,
+      side: THREE.DoubleSide
+    });
+    
+    // Add 6 wings in pairs
+    for (let i = 0; i < 3; i++) {
+      const angle = (i / 3) * Math.PI * 2;
+      
+      // Right wing
+      const rightWing = new THREE.Mesh(wingGeo, wingMat);
+      rightWing.position.set(
+        Math.cos(angle) * 1.5,
+        Math.sin(angle) * 0.5,
+        0
+      );
+      rightWing.rotation.z = angle;
+      seraphim.add(rightWing);
+      
+      // Left wing (mirrored)
+      const leftWing = new THREE.Mesh(wingGeo, wingMat);
+      leftWing.position.set(
+        Math.cos(angle + Math.PI) * 1.5,
+        Math.sin(angle) * 0.5,
+        0
+      );
+      leftWing.rotation.z = angle + Math.PI;
+      leftWing.scale.x = -1;
+      seraphim.add(leftWing);
+    }
+    
+    // Add eyes on wings
+    const eyeGeo2 = new THREE.SphereGeometry(0.15, 8, 8);
+    const eyeMat2 = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: 1
+    });
+    for (let i = 0; i < 12; i++) {
+      const eye = new THREE.Mesh(eyeGeo2, eyeMat2);
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 1.5 + Math.random() * 2;
+      eye.position.set(
+        Math.cos(angle) * radius,
+        (Math.random() - 0.5) * 1,
+        Math.sin(angle) * radius
+      );
+      seraphim.add(eye);
+    }
+    
+    return seraphim;
+  }
+  
+  // Type 3: Cherubim (four faces, four wings)
+  function createCherubim() {
+    const cherubim = new THREE.Group();
+    
+    // Central cubic body
+    const bodyGeo = new THREE.BoxGeometry(2, 2, 2);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0xffa500,
+      emissiveIntensity: 0.6,
+      metalness: 0.5,
+      roughness: 0.3
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    cherubim.add(body);
+    
+    // Add four faces (one on each side)
+    const faceGeo = new THREE.CircleGeometry(0.8, 32);
+    const faceMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide
+    });
+    
+    const faces = [
+      { pos: [0, 0, 1.01], rot: [0, 0, 0] },
+      { pos: [0, 0, -1.01], rot: [0, Math.PI, 0] },
+      { pos: [1.01, 0, 0], rot: [0, Math.PI/2, 0] },
+      { pos: [-1.01, 0, 0], rot: [0, -Math.PI/2, 0] }
+    ];
+    
+    faces.forEach(faceData => {
+      const face = new THREE.Mesh(faceGeo, faceMat);
+      face.position.set(...faceData.pos);
+      face.rotation.set(...faceData.rot);
+      cherubim.add(face);
+      
+      // Add eyes to each face
+      const eyeGeo = new THREE.CircleGeometry(0.15, 16);
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      
+      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+      leftEye.position.copy(face.position);
+      leftEye.position.add(new THREE.Vector3(-0.25, 0.2, 0.02).applyEuler(face.rotation));
+      leftEye.rotation.copy(face.rotation);
+      cherubim.add(leftEye);
+      
+      const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+      rightEye.position.copy(face.position);
+      rightEye.position.add(new THREE.Vector3(0.25, 0.2, 0.02).applyEuler(face.rotation));
+      rightEye.rotation.copy(face.rotation);
+      cherubim.add(rightEye);
+    });
+    
+    return cherubim;
+  }
+  
+  // Create multiple angels and add to desert world
+  const angelTypes = [createOphanim, createSeraphim, createCherubim];
+  
+  for (let i = 0; i < 6; i++) {
+    const createAngel = angelTypes[i % angelTypes.length];
+    const angel = createAngel();
+    
+    // Random starting position high in the sky
+    angel.position.set(
+      (Math.random() - 0.5) * 200,
+      50 + Math.random() * 80,
+      (Math.random() - 0.5) * 200
+    );
+    
+    // Random scale
+    angel.scale.setScalar(0.8 + Math.random() * 1.5);
+    
+    // Store initial position for orbit animation
+    angel.userData.orbitRadius = 80 + Math.random() * 60;
+    angel.userData.orbitSpeed = 0.1 + Math.random() * 0.2;
+    angel.userData.orbitOffset = Math.random() * Math.PI * 2;
+    angel.userData.floatSpeed = 0.5 + Math.random() * 0.5;
+    angel.userData.floatAmount = 5 + Math.random() * 10;
+    
+    angels.push(angel);
+    desertWorld.add(angel);
+  }
+}
 
 // Create portal
 function createPortal() {
@@ -423,9 +654,9 @@ function animate() {
         hemi.color.setHex(0xFFF8DC); // Warm sky
         hemi.groundColor.setHex(0xD2691E); // Sandy ground
         
-        // Increase bloom for transition effect
+        // Reduce bloom for desert (less intense glow)
         bloomPass.strength = 2.5;
-        setTimeout(() => { bloomPass.strength = 0.8; }, 500);
+        setTimeout(() => { bloomPass.strength = 0.5; }, 500);
         
         // Trigger glitch effect for portal transition
         glitchPass.enabled = true;
@@ -500,6 +731,51 @@ function animate() {
     
     // Heat shimmer effect
     rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 1.5 + Math.sin(t * 2) * 0.0008;
+    
+    // Animate angels
+    angels.forEach(angel => {
+      // Orbital movement
+      const orbitAngle = t * angel.userData.orbitSpeed + angel.userData.orbitOffset;
+      const orbitX = Math.cos(orbitAngle) * angel.userData.orbitRadius;
+      const orbitZ = Math.sin(orbitAngle) * angel.userData.orbitRadius;
+      
+      // Floating up and down
+      const floatY = Math.sin(t * angel.userData.floatSpeed) * angel.userData.floatAmount;
+      
+      angel.position.x = orbitX;
+      angel.position.z = orbitZ;
+      angel.position.y = 70 + floatY;
+      
+      // Rotate the angel itself
+      angel.rotation.y += 0.01;
+      
+      // Special animations for different angel types
+      angel.children.forEach((child, index) => {
+        // Ophanim - rotating rings
+        if (child.geometry instanceof THREE.TorusGeometry) {
+          if (index === 0) {
+            child.rotation.x += 0.02;
+            child.rotation.z += 0.01;
+          } else {
+            child.rotation.y += 0.025;
+            child.rotation.z -= 0.015;
+          }
+        }
+        
+        // Seraphim - flapping wings
+        if (child.geometry instanceof THREE.ExtrudeGeometry && angel.children.some(c => c.geometry instanceof THREE.SphereGeometry)) {
+          const wingFlap = Math.sin(t * 2) * 0.2;
+          child.rotation.y = child.userData.baseRotation || child.rotation.y;
+          child.rotation.x = wingFlap;
+        }
+        
+        // All angels - pulsing glow on emissive materials
+        if (child.material && child.material.emissive) {
+          const pulse = 0.5 + Math.sin(t * 1.5 + index) * 0.3;
+          child.material.emissiveIntensity = pulse;
+        }
+      });
+    });
   } else {
     // Original psychedelic mode
     const bgHue = (t * 0.03) % 1;
