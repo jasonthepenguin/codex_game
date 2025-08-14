@@ -36,6 +36,7 @@ const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('start');
 const goalUI = document.getElementById('goal') as HTMLDivElement | null;
 const goalItemMark = document.getElementById('goal-item-mark') as HTMLLIElement | null;
+const goalItemAngel = document.getElementById('goal-item-angel') as HTMLLIElement | null;
 const goalProgress = document.getElementById('goal-progress') as HTMLSpanElement | null;
 
 startBtn?.addEventListener('click', () => controls.lock());
@@ -89,6 +90,8 @@ let desertWorld: THREE.Group;
 let hasLeftPortal = true; // Track if player has left portal area
 let staffSprite: THREE.Sprite | null = null;
 let staffNameplateSprite: THREE.Sprite | null = null;
+let angelSprite: THREE.Sprite | null = null;
+let hasCollectedAngel = false;
 let hasCollectedMark = false;
 
 type AuraEffect = { sprite: THREE.Sprite; startTime: number; duration: number; baseScale: number };
@@ -250,6 +253,7 @@ addWorld();
 createDesertWorld();
 createAngels();
 createStaffBillboard();
+createAngelBillboard();
 
 // Create biblically accurate angels
 function createAngels() {
@@ -622,6 +626,32 @@ function createStaffBillboard() {
   });
 }
 
+function createAngelBillboard() {
+  const loader = new THREE.TextureLoader();
+  loader.load('/angel.png', (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      alphaTest: 0.1,
+      color: 0xdddddd,
+      opacity: 0.85
+    });
+    material.toneMapped = false;
+    const sprite = new THREE.Sprite(material);
+    const targetHeight = 4.2;
+    const aspect = (texture.image && texture.image.width && texture.image.height)
+      ? texture.image.width / texture.image.height
+      : 1;
+    sprite.scale.set(targetHeight * aspect, targetHeight, 1);
+    sprite.position.set(-3, 2, 10);
+    sprite.visible = false; // only show in desert
+    scene.add(sprite);
+    angelSprite = sprite;
+  });
+}
+
 function triggerAuraFlash(position: THREE.Vector3) {
   const size = 3;
   const canvas = document.createElement('canvas');
@@ -838,6 +868,8 @@ function animate() {
         // Hide Mark Chen (sprite + nameplate) in desert world
         if (staffSprite) staffSprite.visible = false;
         if (staffNameplateSprite) staffNameplateSprite.visible = false;
+        // Show Angel only in desert (if not collected)
+        if (angelSprite) angelSprite.visible = !hasCollectedAngel;
         
         // Reduce bloom for desert (less intense glow)
         bloomPass.strength = 2.5;
@@ -864,6 +896,8 @@ function animate() {
           if (staffSprite) staffSprite.visible = true;
           if (staffNameplateSprite) staffNameplateSprite.visible = true;
         }
+        // Hide Angel outside desert
+        if (angelSprite) angelSprite.visible = false;
         
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
@@ -990,6 +1024,17 @@ function animate() {
     }
   }
 
+  // Collection: Angel (only in desert world and if not yet collected)
+  if (isDesertMode && angelSprite && angelSprite.visible && !hasCollectedAngel) {
+    const distA = camera.position.distanceTo(angelSprite.position);
+    if (distA < 4.0) {
+      hasCollectedAngel = true;
+      triggerAuraFlash(angelSprite.position.clone());
+      angelSprite.visible = false;
+      markGoalCompleted('angel');
+    }
+  }
+
   // Ensure billboard faces the camera (optional; Sprite already faces camera by default, but keep stable)
   if (staffSprite) {
     staffSprite.quaternion.copy(camera.quaternion);
@@ -1087,9 +1132,13 @@ function markGoalCompleted(which: 'mark' | 'gpu' | 'angel') {
     goalItemMark.innerHTML = '✅ Mark Chen';
     goalItemMark.style.opacity = '0.9';
   }
+  if (which === 'angel' && goalItemAngel) {
+    goalItemAngel.innerHTML = '✅ Biblically Accurate Angel';
+    goalItemAngel.style.opacity = '0.9';
+  }
   // Recompute progress
   const progress = (goalItemMark?.textContent?.includes('✅') ? 1 : 0)
-                 + 0 /* gpu */
-                 + 0 /* angel */;
+                 + (goalItemAngel?.textContent?.includes('✅') ? 1 : 0)
+                 + 0 /* gpu */;
   if (goalProgress) goalProgress.textContent = `Progress: ${progress} / 3`;
 }
