@@ -1,0 +1,43 @@
+.xp-heading {
+  margin: 4px 0 12px;
+  font-size: 46px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  background-image:
+    linear-gradient(180deg, #ffef9e 0%, #ffd755 35%, #ffb71f 65%, #ff8f05 100%),
+    linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 100%);
+  background-size: 100% 100%, 300% 100%;
+  background-position: center, -150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.25px rgba(110, 60, 0, 0.8);
+  transform: skewX(-12deg) rotate(-1deg);
+  text-shadow:
+    0 1px 0 #a66b00,
+    0 2px 0 #9c6100,
+    0 3px 0 #925800,
+    0 4px 0 #894f00,
+    0 5px 0 #7f4600,
+    0 6px 0 #743f00,
+    0 7px 0 #693800,
+    0 8px 0 #5f3200,
+    0 9px 0 #542b00,
+    0 12px 10px rgba(255, 170, 0, 0.35),
+    2px 14px 14px rgba(255, 110, 0, 0.30);
+  animation: huePulse 14s linear infinite, sheen 4.5s ease-in-out infinite;
+}
+
+@keyframes huePulse {
+  0%   { filter: hue-rotate(0deg) saturate(130%) brightness(1.08); }
+  50%  { filter: hue-rotate(180deg) saturate(165%) brightness(1.28); }
+  100% { filter: hue-rotate(360deg) saturate(130%) brightness(1.08); }
+}
+
+@keyframes sheen {
+  0%   { background-position: center, -150% 0; }
+  50%  { background-position: center, 50% 0; }
+  100% { background-position: center, 150% 0; }
+}
+

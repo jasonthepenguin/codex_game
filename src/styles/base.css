@@ -1,0 +1,25 @@
+:root {
+  --overlay-bg: rgba(0, 0, 0, 0.35);
+  --accent: #f0f;
+  /* Deeper XP blues */
+  --xp-blue-1: #4a8cff;
+  --xp-blue-2: #1f5fe9;
+  --xp-blue-3: #0b3fb8;
+  --xp-win-bg: #ece9d8;
+  --xp-border-dark: #3a6ea5;
+  --xp-border-light: #9db9e6;
+  --xp-shadow: rgba(0,0,0,0.35);
+  --xp-text: #111;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font-family: Tahoma, Verdana, Segoe UI, Roboto, ui-sans-serif, system-ui, -apple-system, Arial;
+}
+
+canvas { display: block; }
+
