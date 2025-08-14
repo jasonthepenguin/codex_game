@@ -19,6 +19,9 @@ document.body.appendChild(renderer.domElement);
 
 // Scene & Camera
 const scene = new THREE.Scene();
+// Overlay scene for labels/HUD that should not get post-processing effects
+const labelScene = new THREE.Scene();
+labelScene.fog = null;
 scene.background = new THREE.Color(0x000000);
 scene.fog = new THREE.FogExp2(0x040012, 0.015);
 
@@ -80,6 +83,7 @@ let psychedelicWorld: THREE.Group;
 let desertWorld: THREE.Group;
 let hasLeftPortal = true; // Track if player has left portal area
 let staffSprite: THREE.Sprite | null = null;
+let staffNameplateSprite: THREE.Sprite | null = null;
 
 function addWorld() {
   // Create psychedelic world group
@@ -603,7 +607,89 @@ function createStaffBillboard() {
     sprite.position.set(8, 2, -12);
     scene.add(sprite);
     staffSprite = sprite;
+
+    // Create nameplate once staff is ready
+    createStaffNameplate('Mark Chen');
   });
+}
+
+function createStaffNameplate(text: string) {
+  const draw = () => {
+    // Build a canvas texture for crisp text
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const padding = 14 * dpr;
+    const fontSize = 18 * dpr; // pixel font reads larger; slight downsize
+    const fontFamily = `'Press Start 2P', system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    const metrics = ctx.measureText(text);
+    const textWidth = Math.ceil(metrics.width);
+    const textHeight = Math.ceil(fontSize * 1.6);
+    canvas.width = textWidth + padding * 2;
+    canvas.height = textHeight + padding * 2;
+
+    // Background pill
+    const radius = 10 * dpr;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 2 * dpr;
+    roundRect(ctx, 0, 0, canvas.width, canvas.height, radius);
+    ctx.fill();
+    ctx.stroke();
+
+    // Text with outline for readability
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.lineWidth = 4 * dpr;
+    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.strokeText(text, canvas.width / 2, canvas.height / 2 + 1 * dpr);
+    ctx.fillStyle = '#e8f0ff';
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 1 * dpr);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+    material.toneMapped = false;
+    material.fog = false;
+    material.depthTest = false;
+    const label = new THREE.Sprite(material);
+
+    // World size for label (auto width by aspect)
+    const labelHeightWorld = 0.6;
+    const aspect = canvas.width / canvas.height;
+    label.scale.set(labelHeightWorld * aspect, labelHeightWorld, 1);
+    label.renderOrder = 10;
+
+    labelScene.add(label);
+    staffNameplateSprite = label;
+  };
+
+  // If the font isn’t ready yet, wait for it
+  if ((document as any).fonts && (document as any).fonts.ready) {
+    (document as any).fonts.ready.then(draw);
+  } else {
+    draw();
+  }
+}
+
+// Helper: rounded rectangle path
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const radius = Math.min(r, h / 2, w / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
 }
 
 // Post-processing
@@ -845,6 +931,16 @@ function animate() {
   if (staffSprite) {
     staffSprite.quaternion.copy(camera.quaternion);
   }
+  if (staffNameplateSprite && staffSprite) {
+    // Position label above the top of the staff sprite
+    const verticalOffset = (staffSprite.scale.y * 0.5) + 0.6;
+    staffNameplateSprite.position.set(
+      staffSprite.position.x,
+      staffSprite.position.y + verticalOffset,
+      staffSprite.position.z
+    );
+    staffNameplateSprite.quaternion.copy(camera.quaternion);
+  }
 
   // Auto glitch pulse
   if (t >= nextGlitchAt && !glitchPass.enabled) {
@@ -880,6 +976,13 @@ function animate() {
   }
 
   composer.render();
+
+  // Render label scene on top without post-processing
+  const prevAutoClear = renderer.autoClear;
+  renderer.autoClear = false;
+  renderer.clearDepth();
+  renderer.render(labelScene, camera);
+  renderer.autoClear = prevAutoClear;
   requestAnimationFrame(animate);
 }
 
