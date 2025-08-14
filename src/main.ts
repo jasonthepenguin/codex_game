@@ -353,8 +353,8 @@ let isSprinting = false;
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const clock = new THREE.Clock();
-const BASE_SPEED = 22;
-const SPRINT_MULTIPLIER = 1.8;
+const BASE_SPEED = 28;
+const SPRINT_MULTIPLIER = 2.2;
 
 const onKeyDown = (event: KeyboardEvent) => {
   switch (event.code) {
@@ -426,6 +426,14 @@ function animate() {
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
         setTimeout(() => { bloomPass.strength = 0.8; }, 500);
+        
+        // Trigger glitch effect for portal transition
+        glitchPass.enabled = true;
+        rgbShiftPass.uniforms['amount'].value = GLITCH_RGB_SHIFT * 2; // Extra intense for portal
+        setTimeout(() => {
+          glitchPass.enabled = false;
+          rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 1.5; // Desert mode RGB shift
+        }, 1000);
       } else {
         // Return to psychedelic world
         isDesertMode = false;
@@ -443,6 +451,14 @@ function animate() {
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
         setTimeout(() => { bloomPass.strength = 1.15; }, 500);
+        
+        // Trigger glitch effect for portal transition
+        glitchPass.enabled = true;
+        rgbShiftPass.uniforms['amount'].value = GLITCH_RGB_SHIFT * 2; // Extra intense for portal
+        setTimeout(() => {
+          glitchPass.enabled = false;
+          rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT; // Back to normal psychedelic RGB shift
+        }, 1000);
       }
     }
   } else if (portalDistance > 4) {
