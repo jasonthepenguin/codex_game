@@ -10,6 +10,31 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
+    <div id="goal" class="xp" style="position:fixed; top:10px; left:10px; z-index:11;">
+      <div class="xp-window" style="width: 320px; animation:none; box-shadow: 0 8px 28px var(--xp-shadow), 0 0 0 1px var(--xp-border-light) inset;">
+        <div class="xp-titlebar" style="padding:4px 6px 4px 8px;">
+          <div class="xp-title">
+            <span class="xp-icon" aria-hidden>⭐</span>
+            <span class="xp-name">Goal</span>
+          </div>
+          <div class="xp-winbtns" aria-hidden>
+            <button class="xp-btn" title="Pin" style="width:18px; height:18px">📌</button>
+          </div>
+        </div>
+        <div class="xp-body" style="padding:12px 14px; text-align:left;">
+          <p class="xp-lead" style="margin:0 0 6px;">Objective</p>
+          <p style="margin:0 0 8px; line-height:1.35; color:#222">You need to collect all three <strong>AGI artefacts</strong> to return to reality.</p>
+          <ul style="margin:0; padding-left: 18px; color:#111;">
+            <li>Mark Chen</li>
+            <li>GPU</li>
+            <li>Biblically Accurate Angel</li>
+          </ul>
+        </div>
+        <div class="xp-statusbar">
+          <span>Progress: 0 / 3</span>
+        </div>
+      </div>
+    </div>
     <div id="overlay" class="xp">
       <div class="xp-window">
         <div class="xp-titlebar">
