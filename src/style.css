@@ -1,9 +1,10 @@
 :root {
   --overlay-bg: rgba(0, 0, 0, 0.35);
   --accent: #f0f;
-  --xp-blue-1: #3d76d3; /* top */
-  --xp-blue-2: #245edb; /* mid */
-  --xp-blue-3: #1f52c8; /* bottom */
+  /* More saturated XP blues */
+  --xp-blue-1: #5aa7ff; /* top */
+  --xp-blue-2: #2f7df7; /* mid */
+  --xp-blue-3: #145fe2; /* bottom */
   --xp-win-bg: #ece9d8;
   --xp-border-dark: #3a6ea5;
   --xp-border-light: #9db9e6;
@@ -40,8 +41,8 @@ canvas { display: block; }
   width: min(92vw, 560px);
   border: 1px solid var(--xp-border-dark);
   border-radius: 6px;
-  box-shadow: 0 16px 50px var(--xp-shadow), 0 0 0 1px var(--xp-border-light) inset;
-  background: var(--xp-win-bg);
+  box-shadow: 0 18px 60px var(--xp-shadow), 0 0 0 1px var(--xp-border-light) inset;
+  background: linear-gradient(180deg, #fefefe 0%, #f5f2e6 40%, #ece8d7 100%);
   color: var(--xp-text);
   overflow: hidden;
 }
@@ -55,6 +56,7 @@ canvas { display: block; }
   text-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 0 6px rgba(0,0,0,0.25);
   background: linear-gradient(180deg, var(--xp-blue-1) 0%, var(--xp-blue-2) 55%, var(--xp-blue-3) 100%);
   border-bottom: 1px solid var(--xp-border-dark);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset;
 }
 
 .xp-title {
@@ -99,36 +101,75 @@ canvas { display: block; }
 .xp-lead { font-weight: 600; }
 
 .xp-heading {
-  margin: 4px 0 10px;
-  font-size: 32px;
+  margin: 4px 0 12px;
+  font-size: 46px;
   line-height: 1.1;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  color: #1a1a1a;
-  background: linear-gradient(180deg, #ffffff 0%, #f6f6ff 35%, #d3d3ff 60%, #b0f3ff 100%);
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  background-image:
+    linear-gradient(180deg, #ffef9e 0%, #ffd755 35%, #ffb71f 65%, #ff8f05 100%),
+    linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 100%);
+  background-size: 100% 100%, 300% 100%;
+  background-position: center, -150% 0;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.25px rgba(110, 60, 0, 0.8);
+  transform: skewX(-12deg) rotate(-1deg);
   text-shadow:
-    0 1px 0 rgba(0,0,0,0.25),
-    0 2px 8px rgba(0, 255, 255, 0.25),
-    0 3px 12px rgba(255, 0, 255, 0.22);
+    0 1px 0 #a66b00,
+    0 2px 0 #9c6100,
+    0 3px 0 #925800,
+    0 4px 0 #894f00,
+    0 5px 0 #7f4600,
+    0 6px 0 #743f00,
+    0 7px 0 #693800,
+    0 8px 0 #5f3200,
+    0 9px 0 #542b00,
+    0 12px 10px rgba(255, 170, 0, 0.35),
+    2px 14px 14px rgba(255, 110, 0, 0.30);
+  animation: huePulse 14s linear infinite, sheen 4.5s ease-in-out infinite;
+}
+
+@keyframes huePulse {
+  0%   { filter: hue-rotate(0deg) saturate(130%) brightness(1.08); }
+  50%  { filter: hue-rotate(180deg) saturate(165%) brightness(1.28); }
+  100% { filter: hue-rotate(360deg) saturate(130%) brightness(1.08); }
+}
+
+@keyframes sheen {
+  0%   { background-position: center, -150% 0; }
+  50%  { background-position: center, 50% 0; }
+  100% { background-position: center, 150% 0; }
 }
 
 .xp-start {
   margin-top: 8px;
-  padding: 8px 18px;
-  border-radius: 16px;
+  padding: 8px 16px 8px 14px;
+  border-radius: 6px;
   border: 1px solid #2a6d1b;
   color: #fff;
-  background: linear-gradient(180deg, #94d660, #4aa42a 60%, #3c8d22 100%);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 0 rgba(0,0,0,0.2);
-  font-weight: 700;
+  background: linear-gradient(180deg, #a8ea6f 0%, #4fbb2f 55%, #2f8e21 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.65) inset, 0 2px 0 rgba(0,0,0,0.2);
+  font-weight: 800;
   letter-spacing: 0.2px;
   cursor: pointer;
 }
-.xp-start:hover { filter: brightness(1.05); }
-.xp-start:active { filter: brightness(0.95); }
+.xp-start:hover { filter: brightness(1.06); }
+.xp-start:active { filter: brightness(0.96); box-shadow: 0 0 0 rgba(0,0,0,0.2); transform: translateY(1px); }
+
+.xp-flag {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.25);
+  background: conic-gradient(#f35325 0 90deg, #81bc06 0 180deg, #05a6f0 0 270deg, #ffba08 0 360deg);
+  transform: rotate(-8deg);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
+}
 
 .xp-statusbar {
   display: flex;
