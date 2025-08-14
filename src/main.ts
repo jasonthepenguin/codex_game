@@ -133,8 +133,8 @@ let isSprinting = false;
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const clock = new THREE.Clock();
-const BASE_SPEED = 16;
-const SPRINT_MULTIPLIER = 1.6;
+const BASE_SPEED = 22;
+const SPRINT_MULTIPLIER = 1.8;
 
 const onKeyDown = (event: KeyboardEvent) => {
   switch (event.code) {
