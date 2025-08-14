@@ -35,6 +35,8 @@ scene.add(controls.getObject());
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('start');
 const goalUI = document.getElementById('goal') as HTMLDivElement | null;
+const goalItemMark = document.getElementById('goal-item-mark') as HTMLLIElement | null;
+const goalProgress = document.getElementById('goal-progress') as HTMLSpanElement | null;
 
 startBtn?.addEventListener('click', () => controls.lock());
 
@@ -87,6 +89,10 @@ let desertWorld: THREE.Group;
 let hasLeftPortal = true; // Track if player has left portal area
 let staffSprite: THREE.Sprite | null = null;
 let staffNameplateSprite: THREE.Sprite | null = null;
+let hasCollectedMark = false;
+
+type AuraEffect = { sprite: THREE.Sprite; startTime: number; duration: number; baseScale: number };
+const auraEffects: AuraEffect[] = [];
 
 function addWorld() {
   // Create psychedelic world group
@@ -616,6 +622,36 @@ function createStaffBillboard() {
   });
 }
 
+function triggerAuraFlash(position: THREE.Vector3) {
+  const size = 3;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(0.3, 'rgba(255, 255, 180, 0.6)');
+  grad.addColorStop(0.75, 'rgba(255,180,0,0.25)');
+  grad.addColorStop(1, 'rgba(255,180,0,0.0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(128, 128, 120, 0, Math.PI * 2);
+  ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  mat.toneMapped = true;
+  const sprite = new THREE.Sprite(mat);
+  sprite.position.copy(position);
+  sprite.position.y += 1.2; // center roughly around sprite
+  const baseScale = size;
+  sprite.scale.set(baseScale, baseScale, 1);
+  scene.add(sprite);
+
+  auraEffects.push({ sprite, startTime: clock.elapsedTime, duration: 0.6, baseScale });
+}
+
 function createStaffNameplate(text: string) {
   const draw = () => {
     // Build a canvas texture for crisp text
@@ -823,9 +859,11 @@ function animate() {
         hemi.color.setHex(0xff00ff); // Reset hemisphere light colors
         hemi.groundColor.setHex(0x00ffff);
         
-        // Show Mark Chen again in psychedelic world
-        if (staffSprite) staffSprite.visible = true;
-        if (staffNameplateSprite) staffNameplateSprite.visible = true;
+        // Show Mark Chen again in psychedelic world if not collected yet
+        if (!hasCollectedMark) {
+          if (staffSprite) staffSprite.visible = true;
+          if (staffNameplateSprite) staffNameplateSprite.visible = true;
+        }
         
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
@@ -938,6 +976,20 @@ function animate() {
     }
   }
 
+  // Collection: Mark Chen (only in psychedelic world and if not yet collected)
+  if (!isDesertMode && staffSprite && staffSprite.visible && !hasCollectedMark) {
+    const dist = camera.position.distanceTo(staffSprite.position);
+    if (dist < 4.0) {
+      hasCollectedMark = true;
+      triggerAuraFlash(staffSprite.position.clone());
+      // Hide sprite + nameplate after collection
+      staffSprite.visible = false;
+      if (staffNameplateSprite) staffNameplateSprite.visible = false;
+      // Update goal UI
+      markGoalCompleted('mark');
+    }
+  }
+
   // Ensure billboard faces the camera (optional; Sprite already faces camera by default, but keep stable)
   if (staffSprite) {
     staffSprite.quaternion.copy(camera.quaternion);
@@ -951,6 +1003,27 @@ function animate() {
       staffSprite.position.z
     );
     staffNameplateSprite.quaternion.copy(camera.quaternion);
+  }
+
+  // Update aura effects
+  if (auraEffects.length) {
+    for (let i = auraEffects.length - 1; i >= 0; i--) {
+      const eff = auraEffects[i];
+      const elapsed = t - eff.startTime;
+      const k = Math.min(1, elapsed / eff.duration);
+      // Ease-out scale and fade
+      const ease = 1 - Math.pow(1 - k, 3);
+      const scale = eff.baseScale * (1 + ease * 1.4);
+      eff.sprite.scale.set(scale, scale, 1);
+      const mat = eff.sprite.material as THREE.SpriteMaterial;
+      mat.opacity = (1 - k) * 0.8;
+      if (k >= 1) {
+        scene.remove(eff.sprite);
+        eff.sprite.material.dispose();
+        if (mat.map) mat.map.dispose();
+        auraEffects.splice(i, 1);
+      }
+    }
   }
 
   // Auto glitch pulse
@@ -1007,3 +1080,16 @@ window.addEventListener('resize', () => {
   renderer.setSize(w, h);
   composer.setSize(w, h);
 });
+
+// Goal UI helpers
+function markGoalCompleted(which: 'mark' | 'gpu' | 'angel') {
+  if (which === 'mark' && goalItemMark) {
+    goalItemMark.innerHTML = '✅ Mark Chen';
+    goalItemMark.style.opacity = '0.9';
+  }
+  // Recompute progress
+  const progress = (goalItemMark?.textContent?.includes('✅') ? 1 : 0)
+                 + 0 /* gpu */
+                 + 0 /* angel */;
+  if (goalProgress) goalProgress.textContent = `Progress: ${progress} / 3`;
+}
