@@ -580,12 +580,10 @@ composer.addPass(glitchPass);
 
 // Movement
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let isSprinting = false;
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const clock = new THREE.Clock();
-const BASE_SPEED = 28;
-const SPRINT_MULTIPLIER = 2.2;
+const BASE_SPEED = 28 * 2.2;
 
 const onKeyDown = (event: KeyboardEvent) => {
   switch (event.code) {
@@ -597,8 +595,6 @@ const onKeyDown = (event: KeyboardEvent) => {
     case 'KeyS': moveBackward = true; break;
     case 'ArrowRight':
     case 'KeyD': moveRight = true; break;
-    case 'ShiftLeft':
-    case 'ShiftRight': isSprinting = true; break;
   }
 };
 
@@ -612,8 +608,6 @@ const onKeyUp = (event: KeyboardEvent) => {
     case 'KeyS': moveBackward = false; break;
     case 'ArrowRight':
     case 'KeyD': moveRight = false; break;
-    case 'ShiftLeft':
-    case 'ShiftRight': isSprinting = false; break;
   }
 };
 
@@ -658,13 +652,8 @@ function animate() {
         bloomPass.strength = 2.5;
         setTimeout(() => { bloomPass.strength = 0.5; }, 500);
         
-        // Trigger glitch effect for portal transition
-        glitchPass.enabled = true;
-        rgbShiftPass.uniforms['amount'].value = GLITCH_RGB_SHIFT * 2; // Extra intense for portal
-        setTimeout(() => {
-          glitchPass.enabled = false;
-          rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 1.5; // Desert mode RGB shift
-        }, 1000);
+        // No portal glitch: set RGB shift to desert baseline immediately
+        rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 1.5;
       } else {
         // Return to psychedelic world
         isDesertMode = false;
@@ -683,13 +672,8 @@ function animate() {
         bloomPass.strength = 2.5;
         setTimeout(() => { bloomPass.strength = 1.15; }, 500);
         
-        // Trigger glitch effect for portal transition
-        glitchPass.enabled = true;
-        rgbShiftPass.uniforms['amount'].value = GLITCH_RGB_SHIFT * 2; // Extra intense for portal
-        setTimeout(() => {
-          glitchPass.enabled = false;
-          rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT; // Back to normal psychedelic RGB shift
-        }, 1000);
+        // No portal glitch: reset RGB shift to psychedelic baseline immediately
+        rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT;
       }
     }
   } else if (portalDistance > 4) {
@@ -813,7 +797,7 @@ function animate() {
 
   // FPS movement when locked
   if (controls.isLocked) {
-    const speed = BASE_SPEED * (isSprinting ? SPRINT_MULTIPLIER : 1); // base/sprint speed
+    const speed = BASE_SPEED; // movement speed
     velocity.x -= velocity.x * 10.0 * delta;
     velocity.z -= velocity.z * 10.0 * delta;
 
