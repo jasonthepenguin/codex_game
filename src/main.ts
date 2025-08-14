@@ -114,7 +114,9 @@ const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, windo
 composer.addPass(bloomPass);
 
 const rgbShiftPass = new ShaderPass(RGBShiftShader);
-rgbShiftPass.uniforms['amount'].value = 0.0015;
+const BASE_RGB_SHIFT = 0.0015;
+const GLITCH_RGB_SHIFT = 0.004;
+rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT;
 composer.addPass(rgbShiftPass);
 
 const filmPass = new FilmPass(0.35, 0.025, 648, false);
@@ -122,7 +124,7 @@ composer.addPass(filmPass);
 filmPass.enabled = true; // always on
 
 const glitchPass = new GlitchPass();
-glitchPass.enabled = false;
+glitchPass.enabled = false; // auto-pulsed below
 composer.addPass(glitchPass);
 
 // Movement
@@ -141,9 +143,6 @@ const onKeyDown = (event: KeyboardEvent) => {
     case 'KeyS': moveBackward = true; break;
     case 'ArrowRight':
     case 'KeyD': moveRight = true; break;
-    case 'KeyG': glitchPass.enabled = !glitchPass.enabled; break;
-    case 'KeyB': bloomPass.enabled = !bloomPass.enabled; break;
-    case 'KeyR': rgbShiftPass.enabled = !rgbShiftPass.enabled; break;
   }
 };
 
@@ -162,6 +161,12 @@ const onKeyUp = (event: KeyboardEvent) => {
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
+
+// Glitch pulse scheduling (mild): ~0.25s every 15s
+const glitchInterval = 15; // seconds
+const glitchDuration = 0.25; // seconds
+let nextGlitchAt = glitchInterval;
+let glitchOffAt = 0;
 
 function animate() {
   const delta = Math.min(0.05, clock.getDelta());
@@ -182,6 +187,18 @@ function animate() {
     const mat = m.material as THREE.MeshStandardMaterial;
     mat.color.copy(c);
     mat.emissive.copy(c).multiplyScalar(0.15 + 0.25 * (0.5 + 0.5 * Math.sin(t * 0.8)));
+  }
+
+  // Auto glitch pulse
+  if (t >= nextGlitchAt && !glitchPass.enabled) {
+    glitchPass.enabled = true; // no goWild for subtle effect
+    rgbShiftPass.uniforms['amount'].value = GLITCH_RGB_SHIFT;
+    glitchOffAt = t + glitchDuration;
+    nextGlitchAt = t + glitchInterval;
+  }
+  if (glitchPass.enabled && t >= glitchOffAt) {
+    glitchPass.enabled = false;
+    rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT;
   }
 
   // FPS movement when locked
