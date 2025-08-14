@@ -3,21 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trippy FPS</title>
+    <title>JayBees Mind</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <div id="overlay">
-      <div class="panel">
-        <h1>Trippy FPS</h1>
-        <p>WASD to move • Mouse to look</p>
-        <p>G: Glitch • B: Bloom • F: Film • R: RGB Shift</p>
-        <button id="start">Click to Enter</button>
-        <p class="hint">Press Esc to release cursor</p>
+    <div id="overlay" class="xp">
+      <div class="xp-window">
+        <div class="xp-titlebar">
+          <div class="xp-title">
+            <span class="xp-icon" aria-hidden>🧠</span>
+            <span class="xp-name">JayBees Mind</span>
+          </div>
+          <div class="xp-winbtns" aria-hidden>
+            <button class="xp-btn xp-min" title="Minimize">_</button>
+            <button class="xp-btn xp-max" title="Maximize">□</button>
+            <button class="xp-btn xp-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="xp-body">
+          <h1 class="xp-heading">JayBees Mind</h1>
+          <p class="xp-lead">WASD to move • Mouse to look</p>
+          <p>G: Glitch • B: Bloom • R: RGB Shift</p>
+          <button id="start" class="xp-start">Start</button>
+        </div>
+        <div class="xp-statusbar">
+          <span>Press Esc to release cursor</span>
+        </div>
       </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
   </html>
-

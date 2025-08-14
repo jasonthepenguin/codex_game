@@ -1,4 +1,4 @@
-# Trippy FPS (Vite + Three.js)
+# JayBees Mind (Vite + Three.js)
 
 Offline, single-player, WebGL first-person exploration with psychedelic visuals.
 
@@ -14,7 +14,6 @@ Offline, single-player, WebGL first-person exploration with psychedelic visuals.
 - Mouse: look (click to lock)
 - G: toggle glitch
 - B: toggle bloom
-- F: toggle film grain/scanlines
 - R: toggle RGB shift
 - Esc: unlock pointer
 
@@ -22,4 +21,6 @@ Offline, single-player, WebGL first-person exploration with psychedelic visuals.
 
 - No external assets required; everything is procedural.
 - Post-processing uses Three.js example passes.
-- If performance dips, try disabling passes (G/B/F/R) or lowering window size.
+- Film grain/scanlines effect is always enabled.
+- Main menu styled like Windows XP.
+- If performance dips, try disabling passes (G/B/R) or lowering window size.

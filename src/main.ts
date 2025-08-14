@@ -119,6 +119,7 @@ composer.addPass(rgbShiftPass);
 
 const filmPass = new FilmPass(0.35, 0.025, 648, false);
 composer.addPass(filmPass);
+filmPass.enabled = true; // always on
 
 const glitchPass = new GlitchPass();
 glitchPass.enabled = false;
@@ -142,7 +143,6 @@ const onKeyDown = (event: KeyboardEvent) => {
     case 'KeyD': moveRight = true; break;
     case 'KeyG': glitchPass.enabled = !glitchPass.enabled; break;
     case 'KeyB': bloomPass.enabled = !bloomPass.enabled; break;
-    case 'KeyF': filmPass.enabled = !filmPass.enabled; break;
     case 'KeyR': rgbShiftPass.enabled = !rgbShiftPass.enabled; break;
   }
 };
@@ -197,8 +197,8 @@ function animate() {
     if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
     if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
 
-    controls.moveRight(velocity.x * delta);
-    controls.moveForward(velocity.z * delta);
+    controls.moveRight(-velocity.x * delta);
+    controls.moveForward(-velocity.z * delta);
   }
 
   composer.render();
@@ -215,4 +215,3 @@ window.addEventListener('resize', () => {
   renderer.setSize(w, h);
   composer.setSize(w, h);
 });
-
