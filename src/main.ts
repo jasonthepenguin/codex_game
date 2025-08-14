@@ -83,6 +83,7 @@ scene.add(dir);
 const psychedelicMeshes: THREE.Mesh[] = [];
 const desertMeshes: THREE.Mesh[] = [];
 const angels: THREE.Group[] = [];
+const sacredSkySprites: THREE.Sprite[] = [];
 let portal: THREE.Mesh;
 let isDesertMode = false;
 let psychedelicWorld: THREE.Group;
@@ -259,6 +260,7 @@ createDesertWorld();
 createAngels();
 createStaffBillboard();
 createAngelBillboard();
+createSacredSky();
 
 // Create biblically accurate angels
 function createAngels() {
@@ -657,6 +659,250 @@ function createAngelBillboard() {
   });
 }
 
+// Sacred geometry sky (non-desert): flower-of-life "stars"
+function createSacredSky() {
+  // Ensure psychedelic world exists
+  if (!psychedelicWorld) return;
+
+  // Pattern 1: Flower/Seed of Life (7 circles)
+  const makeFlowerTex = (size = 256, line = 'rgba(255,255,255,0.95)') => {
+    const dpr = Math.min(2, Math.max(1, (window as any).devicePixelRatio || 1));
+    const canvas = document.createElement('canvas');
+    const s = size * dpr;
+    canvas.width = s; canvas.height = s;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    ctx.clearRect(0, 0, s, s);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = Math.max(1, 1.35 * dpr);
+    ctx.shadowColor = 'rgba(255,255,255,0.8)';
+    ctx.shadowBlur = 6 * dpr;
+
+    const c = s / 2;
+    const r = s * 0.24;
+    const centers: Array<[number, number]> = [[0, 0]];
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2;
+      centers.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+
+    ctx.beginPath();
+    centers.forEach(([x, y]) => {
+      ctx.moveTo(c + x + r, c + y);
+      ctx.arc(c + x, c + y, r, 0, Math.PI * 2);
+    });
+    ctx.stroke();
+
+    ctx.shadowBlur = 10 * dpr;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    const dot = 1.6 * dpr;
+    centers.forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.arc(c + x, c + y, dot, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  };
+
+  // Pattern 2: Metatron's Cube (approx via Fruit of Life centers + connections)
+  const makeMetatronTex = (size = 256, line = 'rgba(255,255,255,0.85)') => {
+    const dpr = Math.min(2, Math.max(1, (window as any).devicePixelRatio || 1));
+    const canvas = document.createElement('canvas');
+    const s = size * dpr;
+    canvas.width = s; canvas.height = s;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    ctx.clearRect(0, 0, s, s);
+    const c = s / 2;
+    const r = s * 0.18;
+
+    const centers: Array<[number, number]> = [[0, 0]];
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      centers.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + Math.PI / 6; // 30° offset outer ring
+      centers.push([Math.cos(a) * (2 * r), Math.sin(a) * (2 * r)]);
+    }
+
+    // Connection lines
+    ctx.strokeStyle = line;
+    ctx.lineWidth = Math.max(1, 1.1 * dpr);
+    ctx.shadowColor = 'rgba(255,255,255,0.75)';
+    ctx.shadowBlur = 5 * dpr;
+    ctx.beginPath();
+    for (let i = 0; i < centers.length; i++) {
+      for (let j = i + 1; j < centers.length; j++) {
+        const [x1, y1] = centers[i];
+        const [x2, y2] = centers[j];
+        ctx.moveTo(c + x1, c + y1);
+        ctx.lineTo(c + x2, c + y2);
+      }
+    }
+    ctx.stroke();
+
+    // Small circles at centers
+    ctx.shadowBlur = 8 * dpr;
+    ctx.beginPath();
+    centers.forEach(([x, y]) => {
+      ctx.moveTo(c + x + r * 0.4, c + y);
+      ctx.arc(c + x, c + y, r * 0.4, 0, Math.PI * 2);
+    });
+    ctx.stroke();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  };
+
+  // Pattern 3: Hexagram (Merkaba 2D projection)
+  const makeHexagramTex = (size = 256, line = 'rgba(255,255,255,0.9)') => {
+    const dpr = Math.min(2, Math.max(1, (window as any).devicePixelRatio || 1));
+    const canvas = document.createElement('canvas');
+    const s = size * dpr;
+    canvas.width = s; canvas.height = s;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+    const c = s / 2;
+    const R = s * 0.3;
+
+    ctx.clearRect(0, 0, s, s);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = Math.max(1, 1.6 * dpr);
+    ctx.shadowColor = 'rgba(255,255,255,0.85)';
+    ctx.shadowBlur = 7 * dpr;
+
+    const tri = (rot: number) => {
+      const pts: Array<[number, number]> = [];
+      for (let i = 0; i < 3; i++) {
+        const a = rot + (i / 3) * Math.PI * 2;
+        pts.push([c + Math.cos(a) * R, c + Math.sin(a) * R]);
+      }
+      return pts;
+    };
+
+    const t1 = tri(-Math.PI / 2);
+    const t2 = tri(-Math.PI / 2 + Math.PI / 3);
+
+    const drawTri = (pts: Array<[number, number]>) => {
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      ctx.lineTo(pts[1][0], pts[1][1]);
+      ctx.lineTo(pts[2][0], pts[2][1]);
+      ctx.closePath();
+      ctx.stroke();
+    };
+
+    drawTri(t1);
+    drawTri(t2);
+
+    // Outer circle
+    ctx.beginPath();
+    ctx.arc(c, c, R * 1.1, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  };
+
+  // Pattern 4: Vesica Piscis (two intersecting circles)
+  const makeVesicaTex = (size = 256, line = 'rgba(255,255,255,0.9)') => {
+    const dpr = Math.min(2, Math.max(1, (window as any).devicePixelRatio || 1));
+    const canvas = document.createElement('canvas');
+    const s = size * dpr;
+    canvas.width = s; canvas.height = s;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    ctx.clearRect(0, 0, s, s);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = Math.max(1, 1.4 * dpr);
+    ctx.shadowColor = 'rgba(255,255,255,0.8)';
+    ctx.shadowBlur = 6 * dpr;
+    const c = s / 2;
+    const R = s * 0.28;
+    const dx = R * 0.6;
+
+    ctx.beginPath();
+    ctx.arc(c - dx, c, R, 0, Math.PI * 2);
+    ctx.arc(c + dx, c, R, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Subtle central almond highlight
+    ctx.shadowBlur = 10 * dpr;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath();
+    ctx.ellipse(c, c, dx, R * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  };
+
+  const textures = [
+    makeFlowerTex(256),
+    makeMetatronTex(256),
+    makeHexagramTex(256),
+    makeVesicaTex(256)
+  ];
+
+  const count = 64;
+  for (let i = 0; i < count; i++) {
+    const tex = textures[Math.floor(Math.random() * textures.length)];
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      opacity: 0.5 + Math.random() * 0.3,
+      color: new THREE.Color().setHSL(0.7 + Math.random() * 0.2, 0.2, 0.9)
+    });
+    mat.toneMapped = false;
+    mat.fog = false;
+    const sprite = new THREE.Sprite(mat);
+
+    const targetHeight = 2.2 + Math.random() * 3.2;
+    const aspect = (tex.image && (tex.image as any).width && (tex.image as any).height)
+      ? (tex.image as any).width / (tex.image as any).height
+      : 1;
+    sprite.scale.set(targetHeight * aspect, targetHeight, 1);
+
+    // Position high in the sky over the psychedelic world
+    sprite.position.set((Math.random() - 0.5) * 300, 80 + Math.random() * 40, (Math.random() - 0.5) * 300);
+
+    const rotSign = Math.random() < 0.5 ? -1 : 1;
+    (sprite.material as THREE.SpriteMaterial).rotation = Math.random() * Math.PI * 2;
+    (sprite as any).userData = {
+      baseY: sprite.position.y,
+      rotSpeed: rotSign * (0.1 + Math.random() * 0.25),
+      twinkleSpeed: 0.6 + Math.random() * 1.2,
+      twinklePhase: Math.random() * Math.PI * 2,
+      baseOpacity: (sprite.material as THREE.SpriteMaterial).opacity,
+      bobAmp: 0.4 + Math.random() * 0.6,
+      bobPhase: Math.random() * Math.PI * 2
+    };
+
+    sacredSkySprites.push(sprite);
+    psychedelicWorld.add(sprite);
+  }
+}
+
 function triggerAuraFlash(position: THREE.Vector3) {
   const size = 3;
   const canvas = document.createElement('canvas');
@@ -1018,6 +1264,16 @@ function animate() {
       const mat = m.material as THREE.MeshStandardMaterial;
       mat.color.copy(c);
       mat.emissive.copy(c).multiplyScalar(0.15 + 0.25 * (0.5 + 0.5 * Math.sin(t * 0.8)));
+    }
+
+    // Animate sacred sky sprites (twinkle, slow rotation, subtle bob)
+    for (const s of sacredSkySprites) {
+      const mat = s.material as THREE.SpriteMaterial;
+      const ud: any = (s as any).userData;
+      mat.rotation += ud.rotSpeed * delta * 0.25;
+      const tw = ud.baseOpacity * (0.65 + 0.35 * Math.sin(t * ud.twinkleSpeed + ud.twinklePhase));
+      mat.opacity = tw;
+      s.position.y = ud.baseY + Math.sin(t * 0.5 + ud.bobPhase) * ud.bobAmp;
     }
   }
 
