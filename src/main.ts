@@ -38,6 +38,7 @@ const goalUI = document.getElementById('goal') as HTMLDivElement | null;
 const goalItemMark = document.getElementById('goal-item-mark') as HTMLLIElement | null;
 const goalItemAngel = document.getElementById('goal-item-angel') as HTMLLIElement | null;
 const goalProgress = document.getElementById('goal-progress') as HTMLSpanElement | null;
+const goalItemGpu = document.getElementById('goal-item-gpu') as HTMLLIElement | null;
 
 startBtn?.addEventListener('click', () => controls.lock());
 
@@ -108,6 +109,10 @@ let staffNameplateSprite: THREE.Sprite | null = null;
 let angelSprite: THREE.Sprite | null = null;
 let hasCollectedAngel = false;
 let hasCollectedMark = false;
+let nvidiaSprite: THREE.Sprite | null = null;
+let hasCollectedGpu = false;
+let nvidiaAuraSprite: THREE.Sprite | null = null;
+let nvidiaGroup: THREE.Group | null = null;
 
 type AuraEffect = { sprite: THREE.Sprite; startTime: number; duration: number; baseScale: number };
 const auraEffects: AuraEffect[] = [];
@@ -1369,6 +1374,7 @@ createAngels();
 createStaffBillboard();
 createAngelBillboard();
 createSacredSky();
+createNvidiaArtifact();
 
 // Create biblically accurate angels
 function createAngels() {
@@ -1878,6 +1884,72 @@ function createAngelBillboard() {
     sprite.visible = false; // only show in desert
     scene.add(sprite);
     angelSprite = sprite;
+  });
+}
+
+// NVIDIA GPU artefact (China world)
+function createNvidiaArtifact() {
+  const loader = new THREE.TextureLoader();
+  loader.load('/nvidia.png', (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      alphaTest: 0.05,
+      opacity: 0.95
+    });
+    material.toneMapped = false;
+    // Group to hold sprite + aura
+    const group = new THREE.Group();
+    const sprite = new THREE.Sprite(material);
+    const targetHeight = 1.2; // world units tall on stair
+    const aspect = (texture.image && texture.image.width && texture.image.height)
+      ? texture.image.width / texture.image.height
+      : 1;
+    sprite.scale.set(targetHeight * aspect, targetHeight, 1);
+    // Slight green aura
+    const auraCanvas = document.createElement('canvas');
+    auraCanvas.width = 256; auraCanvas.height = 256;
+    const ctx = auraCanvas.getContext('2d');
+    if (ctx) {
+      const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 120);
+      grad.addColorStop(0, 'rgba(0,255,120,0.35)');
+      grad.addColorStop(0.5, 'rgba(0,255,80,0.18)');
+      grad.addColorStop(1, 'rgba(0,255,60,0.0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(128, 128, 120, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const auraTex = new THREE.CanvasTexture(auraCanvas);
+    auraTex.colorSpace = THREE.SRGBColorSpace;
+    const auraMat = new THREE.SpriteMaterial({ map: auraTex, transparent: true, depthWrite: false });
+    auraMat.toneMapped = false;
+    const aura = new THREE.Sprite(auraMat);
+    aura.scale.set(2.0, 2.0, 1); // subtle halo size
+    aura.renderOrder = -1;
+    nvidiaAuraSprite = aura;
+
+    group.add(aura);
+    group.add(sprite);
+
+    // Place on second step from the bottom in front of main temple at (0, -80)
+    // Match stairs generated in createChineseTemple with scale=1
+    const steps = 8;
+    const stepIndex = 1; // second step from bottom
+    const stepHeight = 0.5;
+    const stepDepth = 2;
+    const topZ = 12; // must match temple stairs' topZ at scale=1
+    const yCenter = (stepIndex + 0.5) * stepHeight;
+    const yTop = yCenter + stepHeight * 0.5 + 0.05; // tiny bit higher
+    const zLocal = topZ + (steps - 1 - stepIndex) * stepDepth;
+    const templeWorld = { x: 0, z: -80 };
+    group.position.set(0, yTop + 0.05, templeWorld.z + zLocal);
+    group.visible = false; // only visible in China world
+    chinaWorld.add(group);
+    nvidiaSprite = sprite;
+    nvidiaGroup = group;
   });
 }
 
@@ -2469,6 +2541,8 @@ function animate() {
         if (staffNameplateSprite) staffNameplateSprite.visible = false;
         // Hide Angel in China world
         if (angelSprite) angelSprite.visible = false;
+        // Show NVIDIA artefact in China world if not collected
+        if (nvidiaGroup) nvidiaGroup.visible = !hasCollectedGpu;
         
         // Keep white portal visible in China world (allow travel to desert)
         
@@ -2499,6 +2573,8 @@ function animate() {
         }
         // Hide Angel outside desert
         if (angelSprite) angelSprite.visible = false;
+        // Hide NVIDIA artefact outside China
+        if (nvidiaGroup) nvidiaGroup.visible = false;
         
         // White portal is always visible (no need to show it again)
         
@@ -2671,6 +2747,15 @@ function animate() {
     
     // Subtle atmospheric RGB shift for China world
     rgbShiftPass.uniforms['amount'].value = BASE_RGB_SHIFT * 0.8 + Math.sin(t * 1.5) * 0.0003;
+
+    // Pulse NVIDIA aura slightly if present
+    if (nvidiaGroup && nvidiaGroup.visible && nvidiaAuraSprite) {
+      const mat = nvidiaAuraSprite.material as THREE.SpriteMaterial;
+      const base = 0.35;
+      mat.opacity = base + Math.sin(t * 2.2) * 0.08;
+      const s = 2.0 + Math.sin(t * 1.6) * 0.1;
+      nvidiaAuraSprite.scale.set(s, s, 1);
+    }
     
     // Animate scared civilians
     const scaredCivilians = chinaWorld.userData.scaredCivilians;
@@ -2827,6 +2912,17 @@ function animate() {
     }
   }
 
+  // Collection: NVIDIA GPU (only in China world and if not yet collected)
+  if (isChinaMode && nvidiaGroup && nvidiaGroup.visible && !hasCollectedGpu) {
+    const distG = camera.position.distanceTo(nvidiaGroup.position);
+    if (distG < 3.5) {
+      hasCollectedGpu = true;
+      triggerAuraFlash(nvidiaGroup.position.clone());
+      nvidiaGroup.visible = false;
+      markGoalCompleted('gpu');
+    }
+  }
+
   // Ensure billboard faces the camera (optional; Sprite already faces camera by default, but keep stable)
   if (staffSprite) {
     staffSprite.quaternion.copy(camera.quaternion);
@@ -2955,6 +3051,10 @@ function markGoalCompleted(which: 'mark' | 'gpu' | 'angel') {
     goalItemMark.innerHTML = '✅ Mark Chen';
     goalItemMark.style.opacity = '0.9';
   }
+  if (which === 'gpu' && goalItemGpu) {
+    goalItemGpu.innerHTML = '✅ GPU';
+    goalItemGpu.style.opacity = '0.9';
+  }
   if (which === 'angel' && goalItemAngel) {
     goalItemAngel.innerHTML = '✅ Biblically Accurate Angel';
     goalItemAngel.style.opacity = '0.9';
@@ -2962,6 +3062,6 @@ function markGoalCompleted(which: 'mark' | 'gpu' | 'angel') {
   // Recompute progress
   const progress = (goalItemMark?.textContent?.includes('✅') ? 1 : 0)
                  + (goalItemAngel?.textContent?.includes('✅') ? 1 : 0)
-                 + 0 /* gpu */;
+                 + (goalItemGpu?.textContent?.includes('✅') ? 1 : 0);
   if (goalProgress) goalProgress.textContent = `Progress: ${progress} / 3`;
 }
