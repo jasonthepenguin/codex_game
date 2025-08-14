@@ -34,15 +34,18 @@ scene.add(controls.getObject());
 
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('start');
+const goalUI = document.getElementById('goal') as HTMLDivElement | null;
 
 startBtn?.addEventListener('click', () => controls.lock());
 
 controls.addEventListener('lock', () => {
   overlay?.classList.add('hidden');
+  if (goalUI) goalUI.style.display = 'block';
 });
 
 controls.addEventListener('unlock', () => {
   overlay?.classList.remove('hidden');
+  if (goalUI) goalUI.style.display = 'none';
 });
 
 // Coordinates HUD (toggled with "P")
@@ -796,6 +799,10 @@ function animate() {
         hemi.color.setHex(0xFFF8DC); // Warm sky
         hemi.groundColor.setHex(0xD2691E); // Sandy ground
         
+        // Hide Mark Chen (sprite + nameplate) in desert world
+        if (staffSprite) staffSprite.visible = false;
+        if (staffNameplateSprite) staffNameplateSprite.visible = false;
+        
         // Reduce bloom for desert (less intense glow)
         bloomPass.strength = 2.5;
         setTimeout(() => { bloomPass.strength = 0.5; }, 500);
@@ -815,6 +822,10 @@ function animate() {
         scene.fog = new THREE.FogExp2(0x040012, 0.015);
         hemi.color.setHex(0xff00ff); // Reset hemisphere light colors
         hemi.groundColor.setHex(0x00ffff);
+        
+        // Show Mark Chen again in psychedelic world
+        if (staffSprite) staffSprite.visible = true;
+        if (staffNameplateSprite) staffNameplateSprite.visible = true;
         
         // Increase bloom for transition effect
         bloomPass.strength = 2.5;
